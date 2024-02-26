@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- Head tag with necessary metadata and links to external resources -->
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABET DOCUMENTATION PORTAL</title>
+
+    <!-- Links to favicon, Bootstrap CSS, Bootstrap Icons, Google Fonts, and custom stylesheet -->
+    <link rel="icon" href="../static/metu_icon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="../static/metu_icon.ico" type="image/x-icon">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="../static/styles.css">
+
+    <!-- JavaScript libraries for Bootstrap functionality -->
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</head>
+
+<body>
+
+<!-- Navigation bar using Bootstrap's navbar component -->
+<!-- Navigation bar using Bootstrap's navbar component -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <!-- Navbar brand and logo -->
+    <a class="navbar-brand" href="/">
+        <img src="../static/metu_navbar.png" alt="METU" class="logo hidden-xs">
+        <span class="navbar-header">ABET DOCUMENTATION PORTAL</span>
+    </a>
+
+    <!-- Navbar toggler for small screens -->
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Collapsible content for small screens -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Navbar items and links -->
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="/">Dashboard</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/upload">Upload Excel file</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<!-- Placeholder for content, to be filled in by extending templates -->
+{% block content %}
+{% endblock %}
+
+<!-- Modal for selecting PI's -->
+<div class="modal fade" id="piModal" tabindex="-1" role="dialog" aria-labelledby="piModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="piModalLabel">Select PI's</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Table for displaying PI information -->
+                <div id="pi-info-section" style="max-height: 400px; overflow-y: scroll;">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <!-- Table headers -->
+                            <th scope="col" class="col-1">PI ID</th>
+                            <th scope="col" class="col-6">PI Description</th>
+                            <th scope="col" class="col-1">Select</th>
+                        </tr>
+                        </thead>
+                        <tbody id="pi-table-body">
+                        <!-- Table rows will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Modal footer with Close and Save buttons -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="savePiButton">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

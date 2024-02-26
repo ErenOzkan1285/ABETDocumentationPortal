@@ -1,0 +1,153 @@
+body.home {
+    background-color: #f4f4f4;
+}
+
+
+.navbar-brand {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    text-transform: uppercase;
+    padding-left: 10px;
+}
+
+.nav-link {
+    display: block;
+    padding: 10px;
+    font-size: 15px;
+    color: #fff;
+}
+
+.navbar-header {
+    padding-left: 30px;
+}
+
+.container {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 50px;
+}
+
+.file-upload-container {
+    width: 40%;
+    margin: 20px auto;
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+}
+
+.text-container {
+    display: flex;
+    align-items: center;
+}
+
+.text-container img {
+    margin-right: 10px;
+}
+
+.text-container h2 {
+    padding-left: 20px;
+}
+
+.file-upload-container h2 {
+    color: #333;
+    text-align: center;
+}
+
+th {
+    background-color: #b00000;
+    color: white;
+    text-align: center; /* Center-align text within th */
+    border: 1px solid white; /* Set border with white color */
+}
+
+td {
+    text-align: center; /* Center-align text within td */
+}
+
+.align-left {
+    text-align: left;
+}
+
+.result-container {
+    width: 100%;
+    margin: 20px 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+.score-container {
+    width: 100%;
+    margin: 20px 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);;
+}
+
+.column-checkbox {
+    width: 20px;
+    height: 20px;
+}
+
+.result-container h2 {
+    color: #333;
+    text-align: center;
+}
+
+.score-container h2 {
+    color: #333;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.btn-result {
+    width: 25%;
+    border-radius: 20px;
+    background-color: #24a97c;
+    color: white;
+}
+
+.btn-back {
+    width: 25%;
+    border-radius: 20px;
+    background-color: #626262;
+    color: white;
+}
+
+.table-items {
+    margin: 20px 20px;
+}
+
+.btn-pi {
+    background-color: #28a745;
+    border: 1px solid #495057;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+}
+
+.btn-pi:disabled {
+    background-color: #6c757d;
+    border: 1px solid #495057;
+    cursor: not-allowed;
+}
+
+.dashboard-info-container {
+    color: #6c757d;
+    margin-left: 20px;
+    margin-top: 20px;
+}

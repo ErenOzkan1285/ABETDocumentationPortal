@@ -1,0 +1,396 @@
+{% extends "layout.html" %}
+{% block content %}
+
+    <div class="container">
+        <!-- File upload container -->
+        <div class="file-upload-container" id="file-upload-container">
+            <div class="text-container">
+                <img src="../static/excel.png" alt="EXCEL" width="60px" height="60px">
+                <h2>Excel File Upload</h2>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Choose a file:</label>
+                    <input type="file" class="form-control" name="file" id="file" accept=".xlsx, .xls">
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-upload">Upload</button>
+                </div>
+            </form>
+        </div>
+        <!-- Container for the processed table -->
+        <div class="result-container" id="result-container" style="overflow-y: scroll;">
+            <h2>Processed Table</h2>
+            <!-- Table to display processed data -->
+            <table class="table table-bordered" id="table-names">
+                <thead>
+                <tr>
+                    <th scope="col" class="col-2">Table Name</th>
+                    <th scope="col" class="col-2">Average</th>
+                    <th scope="col" class="col-2">Standard Dev.</th>
+                    <th scope="col" class="col-2">Weight</th>
+                    <th scope="col" class="col-2">Out Of</th>
+                    <th scope="col" class="col-2">PI's</th>
+                    <th scope="col" class="col-1">Select</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Loop through table names and create table rows -->
+                {% if table_names %}
+                    {% for table_name in table_names[3:] %}
+                        <tr id="{{ table_name }}">
+                            <td>
+                                {{ table_name }}
+                            </td>
+                            <!-- Cells for Average, Standard Deviation, Weight, PI's, and Select -->
+                            <td id="avg-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
+                            <td id="std-dev-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
+                            <td id="weight-{{ table_name }}" class="weight-cell" style="display: table-cell;">
+                                <input type="number" step="any" class="weight-input" id="weight-input-{{ table_name }}"
+                                       placeholder="Enter weight" disabled required>
+                            </td>
+                            <td id="outof-{{ table_name }}" class="outof-cell" style="display: table-cell;">
+                                <input type="number" step="any" class="outof-input" id="outof-input-{{ table_name }}"
+                                       placeholder="Out of" disabled required>
+                            </td>
+                            <td id="pis-{{ table_name }}" class="pis-cell"
+                                style="display: table-cell; position: relative;">
+                                <span id="selected-pis-{{ table_name }}"></span>
+                                <button type="button" class="btn-pi bi-plus-circle" id="pi-button-{{ table_name }}"
+                                        disabled data-toggle="modal" data-target="#piModal"></button>
+                            </td>
+                            <td>
+                                <label for="{{ table_name }}"></label>
+                                <input type="checkbox" class="column-checkbox" id="{{ table_name }}"
+                                       name="column_checkbox" value="{{ table_name }}">
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
+                </tbody>
+            </table>
+
+            <!-- Buttons for reuploading and generating files -->
+            <div class="d-flex justify-content-between">
+                <button type="submit" id="reupload-bttn" class="btn btn-back btn-lg">Upload Another File
+                </button>
+                <button type="submit" id="generate-bttn" class="btn btn-result btn-lg">Next
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var checkboxDataDictionary = {};
+
+        // Function to fetch data, calculate avg and stdDev, and store in the dictionary
+        function fetchDataAndCalculate(checkbox) {
+            fetch('/api/excel')
+                .then(response => response.json())
+                .then(data => {
+                    data = JSON.parse(data);
+                    console.log(data)
+
+                    var total = 0;
+                    var squaredDifferencesSum = 0;
+
+                    data.forEach(function (student) {
+                        var value = student[checkbox.value];
+                        total += value;
+                    });
+
+                    const avg = (total / data.length).toFixed(2);
+
+                    data.forEach(function (student) {
+                        var value = student[checkbox.value];
+                        squaredDifferencesSum += Math.pow(value - avg, 2);
+                    });
+
+                    const stdDev = Math.sqrt(squaredDifferencesSum / data.length).toFixed(2);
+
+                    checkboxDataDictionary[checkbox.value] = {
+                        avg: checkbox.checked ? avg : '',
+                        stdDev: checkbox.checked ? stdDev : ''
+                    };
+
+                    var avgCell = document.getElementById('avg-' + checkbox.value);
+                    var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
+                    var weightCell = document.getElementById('weight-' + checkbox.value);
+                    var weightInput = document.getElementById('weight-input-' + checkbox.value);
+                    var outofCell = document.getElementById('outof-' + checkbox.value);
+                    var outofInput = document.getElementById('outof-input-' + checkbox.value);
+                    var piButton = document.getElementById('pi-button-' + checkbox.value);
+                    piButton.disabled = !checkbox.checked;
+
+                    avgCell.textContent = checkbox.checked ? avg : '';
+                    stdDevCell.textContent = checkbox.checked ? stdDev : '';
+
+                    weightCell.style.display = 'table-cell';
+                    weightInput.disabled = !checkbox.checked;
+
+                    outofCell.style.display = 'table-cell';
+                    outofCell.disabled = !checkbox.checked;
+
+                    calculateNormalizedScores(checkbox)
+
+                    if (!checkbox.checked) {
+                        outofInput.value = '';
+                        weightInput.value = '';
+                        var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
+                        selectedPisCell.textContent = '';
+                    }
+
+                    console.log(checkboxDataDictionary)
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var tableList = document.getElementById('table-names');
+            var resultContainer = document.getElementById('result-container');
+            var uploadContainer = document.getElementById('file-upload-container');
+            var checkboxList = document.querySelectorAll('.column-checkbox');
+            var hasTrItems = tableList.querySelectorAll('tbody tr').length > 0;
+
+            // Check if there are table rows, show/hide containers accordingly
+            if (hasTrItems) {
+                resultContainer.style.display = 'block';
+                uploadContainer.style.display = 'none';
+            }
+
+            // Event listener for the "Upload Another File" button
+            document.getElementById('reupload-bttn').addEventListener('click', function () {
+                resultContainer.style.display = 'none';
+                uploadContainer.style.display = 'block';
+
+                var tbody = tableList.querySelector('tbody');
+                while (tbody.firstChild) {
+                    var deletedItemContent = tbody.firstChild.textContent;
+                    console.log(`${deletedItemContent} deleted`);
+                    tbody.removeChild(tbody.firstChild);
+                }
+                console.log('After removal:', tableList.querySelectorAll('tbody tr').length);
+            });
+
+            checkboxList.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    var weightInput = document.getElementById('weight-input-' + checkbox.value);
+                    var outofInput = document.getElementById('outof-input-' + checkbox.value);
+                    var piButton = document.getElementById('pi-button-' + checkbox.value);
+
+
+                    weightInput.addEventListener('input', function () {
+                        if (checkbox.checked) {
+                            // Update the weight value in the dictionary whenever it changes
+                            if (!checkboxDataDictionary[checkbox.value]) {
+                                checkboxDataDictionary[checkbox.value] = {};
+                            }
+                            checkboxDataDictionary[checkbox.value].weight = weightInput.value;
+                            console.log(checkboxDataDictionary);
+                        }
+                    });
+                    outofInput.addEventListener('input', function () {
+                        if (checkbox.checked) {
+                            if (!checkboxDataDictionary[checkbox.value]) {
+                                checkboxDataDictionary[checkbox.value] = {};
+                            }
+                            checkboxDataDictionary[checkbox.value].outof = outofInput.value;
+                            console.log(checkboxDataDictionary);
+                            calculateNormalizedScores(checkbox)
+                        }
+                    });
+                    if (!checkbox.checked) {
+                        // Remove the key and its values if checkbox is unchecked
+                        delete checkboxDataDictionary[checkbox.value];
+
+                        // Clear the UI values for the unchecked checkbox
+                        var avgCell = document.getElementById('avg-' + checkbox.value);
+                        var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
+                        var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
+
+                        avgCell.textContent = '';
+                        stdDevCell.textContent = '';
+                        weightInput.value = '';
+                        outofInput.value = '';
+                        selectedPisCell.textContent = '';
+
+                        // Disable weight input and PI selection for unchecked checkbox
+                        weightInput.disabled = true;
+                        outofInput.disabled = true;
+                        piButton.disabled = true;
+                    } else {
+                        // Fetch data and calculate when checkbox is checked
+                        fetchDataAndCalculate(checkbox);
+
+                        // Enable weight input and PI selection for checked checkbox
+                        outofInput.disabled = false;
+                        weightInput.disabled = false;
+                        piButton.disabled = false;
+                    }
+                });
+            });
+
+
+            // Event listener for PI button click to populate the modal
+            checkboxList.forEach(function (checkbox) {
+                var piButton = document.getElementById('pi-button-' + checkbox.value);
+                piButton.addEventListener('click', function () {
+                    var checkedCheckbox = checkbox; //Storing the reference for checked checkbox
+
+                    //Fetching PI's from database to display
+                    fetch('/api/performanceindicators')
+                        .then(response => response.json())
+                        .then(data => {
+                            //Creating modal with PI details table
+                            var modalBody = document.getElementById('pi-table-body');
+                            modalBody.innerHTML = '';
+
+                            data.forEach(function (pi) {
+                                var row = document.createElement('tr');
+
+                                var idCell = document.createElement('td');
+                                idCell.textContent = pi.id;
+                                row.appendChild(idCell);
+
+                                var descCell = document.createElement('td');
+                                descCell.textContent = pi.description;
+                                row.appendChild(descCell);
+
+                                var checkboxCell = document.createElement('td');
+                                var checkbox = document.createElement('input');
+                                checkbox.type = 'checkbox';
+                                checkbox.value = pi.id;
+                                checkbox.id = 'modal-pi-' + checkedCheckbox.value + '-' + pi.id;
+                                checkboxCell.appendChild(checkbox);
+                                row.appendChild(checkboxCell);
+
+                                modalBody.appendChild(row);
+                            });
+
+                            //Event listener for Save button in the modal
+                            document.getElementById('savePiButton').addEventListener('click', function () {
+                                // Get selected PI's using the checked checkbox
+                                var selectedPis = [];
+                                data.forEach(function (pi) {
+                                    var checkbox = document.getElementById('modal-pi-' + checkedCheckbox.value + '-' + pi.id);
+                                    if (checkbox.checked) {
+                                        selectedPis.push(pi);
+                                    }
+                                });
+
+                                if (checkbox.checked) {
+                                    if (!checkboxDataDictionary[checkbox.value]) {
+                                        checkboxDataDictionary[checkbox.value] = {};
+                                    }
+                                    checkboxDataDictionary[checkbox.value].selectedPis = selectedPis;
+                                    console.log(checkboxDataDictionary);
+                                }
+                                // Update the selected PI's in the checked checkbox cell
+                                var selectedPisCell = document.getElementById('selected-pis-' + checkedCheckbox.value);
+                                selectedPisCell.textContent = selectedPis.map(pi => pi.id).join(', ');
+
+                                $('#piModal').modal('hide');
+                            });
+                        })
+                        .catch(error => console.error('Error fetching performance indicators:', error));
+                });
+            });
+        });
+
+        function calculateNormalizedScores(checkbox) {
+            const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
+            const outof = parseFloat(checkboxDataDictionary[checkbox.value].outof);
+
+            if (!isNaN(avg) && !isNaN(outof) && outof !== 0) {
+                const normalizedScore = (avg / outof).toFixed(2);
+                console.log('Normalized Score:', normalizedScore);
+
+                // You can store or display the normalized score as needed
+                checkboxDataDictionary[checkbox.value].normalizedScore = normalizedScore;
+            } else {
+                console.error('Invalid values for normalization:', avg, outof);
+            }
+        }
+
+        function bubbleSort(arr, l, r) {
+            var lngMin = l;
+            var lngMax = r;
+
+            for (var i = lngMin; i < lngMax - 1; i++) {
+                for (var j = i + 1; j < lngMax; j++) {
+                    if (arr[i] > arr[j]) {
+                        // Swap values in arr
+                        var temp = arr[i];
+                        arr[i] = arr[j];
+                        arr[j] = temp;
+
+                    }
+                }
+            }
+        }
+
+        function calculatePIWeight() {
+            return new Promise((resolve, reject) => {
+                fetch('/api/performanceindicators')
+                    .then(response => response.json())
+                    .then(piData => {
+                        var piWeightResult = {};
+                        // Loop through the PI data
+                        piData.forEach(function (pi) {
+                            var piWeights = {}; // Store PI weights with respective IDs
+                            var result_count = 0
+                            var result_Array = []
+                            var piId = pi.id;
+
+                            for (var checkboxValue in checkboxDataDictionary) {
+                                var checkboxData = checkboxDataDictionary[checkboxValue];
+                                var selectedPis = checkboxData.selectedPis;
+                                var weight = parseFloat(checkboxData.weight);
+                                var normalizedScore = parseFloat(checkboxData.normalizedScore)
+
+                                const isPiIdIncluded = selectedPis.some(pi => pi.id === piId);
+                                if (selectedPis && weight && isPiIdIncluded) {
+                                    if (!piWeights[piId]) {
+                                        piWeights[piId] = 0;
+                                    }
+                                    piWeights[piId] += weight;
+
+                                    result_Array[result_count] = normalizedScore
+                                    result_count += 1
+                                    console.log(result_Array)
+                                }
+                            }
+
+                            if (result_count > 1) {
+                                bubbleSort(result_Array, 1, result_count)
+                            }
+
+                            for (var p in piWeights) {
+                                piWeightResult[p] = result_Array[Math.floor(result_count / 2)];
+                            }
+
+                            resolve(piWeightResult);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching performance indicators:', error);
+                        reject(error);
+                    });
+            });
+        }
+
+        document.getElementById('generate-bttn').addEventListener('click', function () {
+            calculatePIWeight().then(piWeights => {
+                console.log("PIHomepoage:",piWeights);
+                const queryParams = new URLSearchParams(Object.entries(piWeights)).toString();
+                // Append the query parameter to the URL
+                window.location.href = '/process?' + queryParams;
+                // You can use piWeights or perform further operations with it
+            }).catch(error => {
+                // Handle error if needed
+                console.error('Error calculating PI weights:', error);
+            });
+        });
+
+    </script>
+{% endblock %}

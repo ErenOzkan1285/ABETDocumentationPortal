@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    <link rel="stylesheet" type="text/css" href="../static/styles.css">
+    <div class="dashboard-info-container">
+        <h4 class="dashboard-info-heading">Welcome to the Dashboard!</h4>
+        <p class="dashboard-info-p">
+            "Welcome to ABET Documentation Panel !
+            <br/>
+            <span>Time: </span>
+            <span id="current-time"></span>
+        </p>
+    </div>
+    <script>
+        function updateTime() {
+            var now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            });
+        }
+
+        // Update the time every second (1000 milliseconds)
+        setInterval(updateTime, 1000);
+    </script>
+{% endblock %}
