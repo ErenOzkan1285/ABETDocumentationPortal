@@ -1,5 +1,22 @@
 from sqlalchemy import ForeignKeyConstraint
-from flaskbitirme import db
+from flaskbitirme import db, login_manager
+from flask_login import UserMixin
+
+# For Admin class
+@login_manager.user_loader
+def load_admin(admin_id):
+    return Admin.query.get(int(admin_id))
+
+# For Instructor class
+@login_manager.user_loader
+def load_instructor(instructor_id):
+    return Instructor.query.get(int(instructor_id))
+
+# For Coordinator class
+@login_manager.user_loader
+def load_coordinator(coordinator_id):
+    return Coordinator.query.get(int(coordinator_id))
+
 
 ### MANY-TO-MANY RELATIONSHIP EXTRA TABLES ###
 # Relationship table for CourseObjective and PerformanceIndicator (many-to-many)
@@ -59,31 +76,34 @@ assessmentitem_performanceindicator = db.Table('assessmentitem_performanceindica
 ### END OF MANY-TO-MANY RELATIONSHIP EXTRA TABLES ###
 
 
-class Admin(db.Model):
+class Admin(db.Model, UserMixin):
     __tablename__ = 'Admin'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(50), unique=True, nullable=False)
     surname = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)  
     departments = db.relationship('Department', backref='admin', lazy=True)
 
 
-class Instructor(db.Model):
+class Instructor(db.Model, UserMixin):
     __tablename__ = 'Instructor'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(50), unique=True, nullable=False)
     surname = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)  
     course_instances = db.relationship('CourseInstance', backref='instructor', lazy=True)
 
 
-class Coordinator(db.Model):
+class Coordinator(db.Model, UserMixin):
     __tablename__ = 'Coordinator'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(50), unique=True, nullable=False)
     surname = db.Column(db.String(50), unique=True, nullable=False)
-    department_code = db.Column(db.String(5), db.ForeignKey('Department.department_code'), nullable=False)
+    password = db.Column(db.String(100), nullable=False)  
+    department_code = db.Column(db.String(5), db.ForeignKey('Department.department_code'))
 
 
 class Department(db.Model):

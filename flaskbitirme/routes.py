@@ -1,7 +1,8 @@
-from flask import render_template, request, jsonify
-from flaskbitirme import app
+from flask import render_template, request, jsonify, url_for, redirect
+from flaskbitirme import app, db, bcrypt
 import pandas as pd
 from flaskbitirme.models import *
+from flask_login import login_user, current_user, logout_user
 
 df = pd.DataFrame()  # Initialize an empty DataFrame
 all_sheets = {}
@@ -9,6 +10,9 @@ all_sheets = {}
 
 @app.route('/upload', methods=['GET', 'POST'])
 def home():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # Redirect to the login page if the user is not authenticated
+    
     global df
     global all_sheets
 
@@ -43,6 +47,96 @@ def home():
 
     # Request method is GET
     return render_template('home.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+
+        # Check if the user is an Admin
+        admin = Admin.query.filter_by(email=email).first()
+        if admin and bcrypt.check_password_hash(admin.password, password):
+            login_user(admin)
+            # Set session variable or perform any other necessary actions
+            return render_template('home.html')  # Redirect to admin dashboard
+        
+        # Check if the user is an Instructor
+        instructor = Instructor.query.filter_by(email=email).first()
+        #print(instructor.email)
+        if instructor and bcrypt.check_password_hash(instructor.password, password):
+            login_user(instructor)
+            print('instructor logged in')
+            # Set session variable or perform any other necessary actions
+            return render_template('home.html')  # Redirect to instructor dashboard
+        
+        
+        # Check if the user is a Coordinator
+        coordinator = Coordinator.query.filter_by(email=email).first()
+        if coordinator and bcrypt.check_password_hash(coordinator.password, password):
+            login_user(coordinator)
+            # Set session variable or perform any other necessary actions
+            return render_template('home.html')  # Redirect to coordinator dashboard
+        
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('dashboard'))
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        name = request.form['name']
+        surname = request.form['surname']
+        email = request.form['email']
+        password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        role = request.form['role']
+
+        # Check if passwords match
+        if password != confirm_password:
+            error = "Passwords do not match."
+            return render_template('signup.html', error=error)
+
+        # Check if username is already taken based on the role
+        if role == 'Admin':
+            existing_user = Admin.query.filter_by(email=email).first()
+        elif role == 'Instructor':
+            existing_user = Instructor.query.filter_by(email=email).first()
+        elif role == 'Coordinator':
+            existing_user = Coordinator.query.filter_by(email=email).first()
+        else:
+            error = "Invalid role."
+            return render_template('signup.html', error=error)
+
+        if existing_user:
+            error = f"{role} username already exists. Please choose a different username."
+            return render_template('signup.html', error=error)
+        
+        # Encrypt the password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        # Create a new user object and add it to the appropriate table in the database
+        if role == 'Admin':
+            new_user = Admin(name=name,surname=surname,email=email,password=hashed_password)
+        elif role == 'Instructor':
+            new_user = Instructor(name=name,surname=surname,email=email,password=hashed_password)
+        elif role == 'Coordinator':
+            new_user = Coordinator(name=name,surname=surname,email=email,password=hashed_password)
+        else:
+            # This should never happen due to the earlier check, but included for completeness
+            error = "Invalid role."
+            return render_template('signup.html', error=error)
+
+        db.session.add(new_user)
+        db.session.commit()
+        return render_template('login.html')
+
+    # If the request method is GET, simply render the signup page
+    return render_template('signup.html')
 
 
 # API ENDPOINTS
