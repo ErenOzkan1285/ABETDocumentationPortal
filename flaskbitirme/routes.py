@@ -175,71 +175,6 @@ def get_second_page_data():
         return jsonify({"message": "No page(tab) called 'Survey'"})
 
 
-# Get PerformanceIndicators
-@app.route('/api/performanceindicators', methods=['GET'])
-def getPerformanceIndicators():
-    performance_indicators = PerformanceIndicator.query.all()
-
-    # Convert performance indicators to a list of dictionaries
-    indicators_list = [
-        {
-            'id': indicator.id,
-            'description': indicator.description,
-        }
-        for indicator in performance_indicators
-    ]
-
-    return jsonify(indicators_list)
-
-
-"""
-    performance_indicators = PerformanceIndicator.query.all()
-
-    result = db.session.query(PerformanceIndicator).join(CourseInstancePerformanceIndicator,
-                                                         CourseInstancePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
-        join(CourseInstance, ((CourseInstancePerformanceIndicator.course_instance_code == CourseInstance.course_code) &
-                              (CourseInstancePerformanceIndicator.course_instance_year == CourseInstance.year) &
-                              (
-                                      CourseInstancePerformanceIndicator.course_instance_semester == CourseInstance.semester))). \
-        filter((CourseInstance.course_code == '242') &
-               (CourseInstance.year == 2023) &
-               (CourseInstance.semester == 'S')).all()
-    # Convert performance indicators to a list of dictionaries
-
-    indicators_list = [
-        {
-            'id': indicator.id,
-            'description': indicator.description,
-        }
-        for indicator in result
-    ]
-    print(indicators_list)
-    return jsonify(indicators_list)
-"""
-
-
-# Get StudentOutcomes
-@app.route('/api/studentoutcomes', methods=['GET'])
-def getStudentOutcomes():
-    student_outcomes = StudentOutcome.query.all()
-
-    # Query to fetch StudentOutcomes related to the department with code '355'
-
-    result_so = db.session.query(StudentOutcome). \
-        filter(StudentOutcome.department_code == '355').all()
-
-    # Convert student outcomes to a list of dictionaries
-    indicators_list = [
-        {
-            'id': indicator.id,
-            'description': indicator.description,
-        }
-        for indicator in student_outcomes
-    ]
-    print(result_so)
-    return jsonify(indicators_list)
-
-
 @app.route('/')
 def dashboard():
     # Render the dashboard.html template
@@ -269,20 +204,93 @@ def process():
         return render_template('process.html', message="No page(tab) called 'secondpage'")
 
 
+
+"""
+# Get PerformanceIndicators
+@app.route('/api/performanceindicators', methods=['GET'])
+def getPerformanceIndicators():
+    performance_indicators = PerformanceIndicator.query.all()
+
+    # Convert performance indicators to a list of dictionaries
+    indicators_list = [
+        {
+            'id': indicator.id,
+            'description': indicator.description,
+        }
+        for indicator in performance_indicators
+    ]
+
+    return jsonify(indicators_list)
+"""
+
+@app.route('/api/performanceindicators', methods=['GET'])
+def getPerformanceIndicators():
+    course_code = request.args.get('course_code')
+    year = request.args.get('year')
+    semester = request.args.get('semester')
+
+    query = PerformanceIndicator.query.join(CourseInstancePerformanceIndicator,
+                                             CourseInstancePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
+        join(CourseInstance, ((CourseInstancePerformanceIndicator.course_instance_code == CourseInstance.course_code) &
+                              (CourseInstancePerformanceIndicator.course_instance_year == CourseInstance.year) &
+                              (CourseInstancePerformanceIndicator.course_instance_semester == CourseInstance.semester)))
+
+    if course_code and year and semester:
+        query = query.filter((CourseInstance.course_code == course_code) &
+                             (CourseInstance.year == int(year)) &
+                             (CourseInstance.semester == semester))
+
+    result = query.all()
+
+    # Convert performance indicators to a list of dictionaries
+    indicators_list = [
+        {
+            'id': indicator.id,
+            'description': indicator.description,
+        }
+        for indicator in result
+    ]
+
+    print(indicators_list)
+    return jsonify(indicators_list)
+
+
+
+
+@app.route('/api/studentoutcomes', methods=['GET'])
+def getStudentOutcomes():
+    department_code = request.args.get('department_code')
+
+    if department_code is None:
+        student_outcomes = StudentOutcome.query.all()  #if it's not specified all studentoutcomes will come
+    else:
+        student_outcomes = StudentOutcome.query.filter_by(department_code=department_code).all()
+
+    # Convert student outcomes to a list of dictionaries
+    indicators_list = [
+        {
+            'id': indicator.id,
+            'description': indicator.description,
+        }
+        for indicator in student_outcomes
+    ]
+    return jsonify(indicators_list)
+
+
 @app.route('/api/courseobjectives', methods=['GET'])
 def getCourseObjective():
-    courseObjectives = CourseObjective.query.all()
+    course_code = request.args.get('course_code')
+    year = request.args.get('year')
+    semester = request.args.get('semester')
 
-    # SQL query using SQLAlchemy
     result_co = db.session.query(CourseObjective.description, CourseObjective.id) \
         .join(CourseObjectiveScore, CourseObjective.id == CourseObjectiveScore.course_objective_id) \
         .filter(
-        CourseObjectiveScore.course_code == '350',
-        CourseObjectiveScore.year == 2023,
-        CourseObjectiveScore.semester == 'S'
-    ).all()
+            CourseObjectiveScore.course_code == course_code,
+            CourseObjectiveScore.year == year,
+            CourseObjectiveScore.semester == semester
+        ).all()
 
-    # Convert course objectives to a list of dictionaries
     indicators_list = [
         {
             'id': indicator.id,
@@ -290,5 +298,81 @@ def getCourseObjective():
         }
         for indicator in result_co
     ]
+
     print(result_co)
     return jsonify(indicators_list)
+
+
+
+@app.route('/api/instructor/courses', methods=['GET'])
+def get_instructor_courses():
+    #take instructors name??
+    instructor_name = request.args.get('name')
+
+    instructor = Instructor.query.filter_by(name=instructor_name).first()
+
+    # if instructor exist
+    if instructor:
+        course_instances = instructor.course_instances
+
+        courses_info = []
+        for course_instance in course_instances:
+            course_info = {
+                'course_code': course_instance.course_code,
+                'year': course_instance.year,
+                'semester': course_instance.semester
+            }
+            courses_info.append(course_info)
+
+        return jsonify({'instructor': instructor_name, 'courses': courses_info})
+    else:
+        # if instructor is not exist
+        return jsonify({'message': f"Instructor {instructor_name} not found"}), 404
+
+
+
+@app.route('/api/instructor/courses', methods=['GET'])
+def get_instructor_selected_courses():
+    instructor_name = request.args.get('name')
+    year = request.args.get('year')
+    semester = request.args.get('semester')
+
+    instructor = Instructor.query.filter_by(name=instructor_name).first()
+
+    # if instructor exist
+    if instructor:
+        course_instances = CourseInstance.query.filter_by(instructor_id=instructor.id, year=year, semester=semester).all()
+
+        courses_info = []
+        for course_instance in course_instances:
+            course_info = {
+                'course_code': course_instance.course_code,
+                'year': course_instance.year,
+                'semester': course_instance.semester
+            }
+            courses_info.append(course_info)
+
+        return jsonify({'instructor': instructor_name, 'courses': courses_info})
+    else:
+        # if instructor is not exist
+        return jsonify({'message': f"Instructor {instructor_name} not found"}), 404
+
+
+#all courses of a program that have been opened according to the selected year and semester
+@app.route('/api/courses', methods=['GET'])
+def get_courses_by_filter():
+    year = request.args.get('year')
+    semester = request.args.get('semester')
+    department_code = request.args.get('department_code')
+
+    courses = CourseInstance.query.filter_by(year=year, semester=semester, department_code=department_code).all()
+
+    courses_data = []
+    for course in courses:
+        course_data = {
+            'course_code': course.course_code,
+            'instructor_id': course.instructor_id,
+        }
+        courses_data.append(course_data)
+
+    return jsonify({'courses': courses_data}), 200
