@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="../static/login&register_styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap" rel="stylesheet">
-    <title>Login Page</title>
+    <title>Register Page</title>
 </head>
 <body>
 <header class="top-bar">
@@ -20,10 +20,18 @@
         <div class="lock-logo">
             <i class="fas fa-lock"></i>
         </div>
-        <p>LOGIN · GİRİŞ</p>
+        <p>REGISTER · KAYIT OL</p>
     </div>
-        <form action="/" method="post"> <!-- Changed the action to match the route -->
-        <label for="email">Email / Kullanıcı Adı:</label>
+    <form action="/register" method="post">
+        <label for="name">Name / İsim:</label>
+        <div class="custom-input">
+            <input type="text" name="name" required>
+        </div>
+        <label for="surname">Surname / Soyisim:</label>
+        <div class="custom-input">
+            <input type="text" name="surname" required>
+        </div>
+        <label for="email">Email / E-posta:</label>
         <div class="custom-input">
             <input type="text" name="email" required>
         </div>
@@ -31,19 +39,27 @@
         <div class="custom-input">
             <input type="password" name="password" required>
         </div>
-        {% if error %}
-            <p>{{ error }}</p> <!-- Display error message if it exists -->
-        {% endif %}
-        <button type="submit">Login · Giriş</button>
+        <label for="confirm_password">Confirm Password / Parolanızı Onaylayın:</label>
+        <div class="custom-input">
+            <input type="password" name="confirm_password" required>
+        </div>
+        <label for="role">Role:</label>
+        <div class="custom-input">
+            <select name="role" required>
+                <option value="Admin">Admin</option>
+                <option value="Instructor">Instructor</option>
+                <option value="Coordinator">Coordinator</option>
+            </select>
+        </div>
+        <button type="submit" style="background-color: #02a1c5;">Register · Kayıt Ol</button>
     </form>
     <div class="forgot-pass">
         <p><a href="">English · Türkçe </a></p>
-        <p><a href="">Forgot password / Şifremi unuttum</a></p>
     </div>
-    <div class="register">
-        <p>To Register / Kayıt için</p>
-        <div class="register-button">
-            <button onclick="goToRegister()">Register</button>
+    <div class="login">
+        <p>Do you have an account?</p>
+        <div class="login-button">
+            <button onclick="goToLogin()">Login</button>
         </div>
     </div>
 </div>
@@ -54,9 +70,9 @@
     const randomImage = backgroundImages[Math.floor(Math.random() * backgroundImages.length)];
     document.body.style.backgroundImage = randomImage;
 
-    function goToRegister() {
-        // Redirect to the register page
-        window.location.href = "/register";
+    function goToLogin() {
+        // Redirect to the login page
+        window.location.href = "/";
     }
 </script>
 </body>

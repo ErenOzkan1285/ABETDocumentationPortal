@@ -1,0 +1,225 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    background-image: url('/images/background.jpg');
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+}
+
+.top-bar {
+    background: linear-gradient(to bottom, #666666, #333);
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.8);
+}
+
+.top-bar p {
+    font-family: 'Roboto', sans-serif;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffffff;
+    text-transform: uppercase;
+    padding-left: 10px;
+}
+
+.login-header {
+    font-size: large;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: row;
+    padding-inline: 20px;
+    align-items: center;
+    background-color: #dbdada;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.header p {
+    font-size: 20px;
+    text-align: center;
+}
+
+.lock-logo {
+    border: 1px solid #333;
+    border-radius: 100%;
+    margin-right: 20px;
+    padding: 5px;
+}
+
+.logo img {
+    width: 30px;
+    height: 30px;
+}
+
+.custom-input {
+    margin-left: 25px;
+    margin-right: 25px;
+    margin-bottom: 10px;
+}
+
+.custom-input input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+button {
+    background-color: rgba(25, 187, 0, 0.6);
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    margin-bottom: 7px;
+    width: 300px;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.reg-container h2 {
+    margin-bottom: 20px;
+}
+
+.reg-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.reg-form button {
+    background-color: #4caf50;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.login-container {
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    width: 400px;
+    margin-top: 70px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.login-container label {
+    font-family: 'Roboto';
+    font-weight: 600;
+    color: #474646;
+    align-self: flex-start;
+    display: flex;
+    padding-left: 25px;
+}
+
+.login-container h2 {
+    margin-bottom: 20px;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.login-form button {
+    background-color: #4caf50;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.register {
+    margin-bottom: 20px;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+}
+
+.register-button {
+    width: 50%;
+    height: 50%;
+    margin-left: 10px;
+    margin-top: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.register-button button {
+    width: 80%;
+    font-size: 14px;
+    align-self: center;
+    background-color: #02a1c5;
+}
+
+.register p {
+    font-weight: 300;
+    color: #474646;
+    align-self: flex-start;
+    display: flex;
+}
+
+.login {
+    margin-bottom: 20px;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: row;
+    text-align: center;
+}
+
+.login-button {
+    width: 40%;
+    height: 50%;
+    margin-left: 10px;
+    margin-top: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-button button {
+    width: 80%;
+    font-size: 14px;
+    align-self: center;
+    background-color: #4caf50;
+}
+
+.login p {
+    font-weight: 300;
+    color: #474646;
+    align-self: flex-start;
+    display: flex;
+}
+
+.forgot-pass {
+    margin-top: 20px;
+    margin-left: 20px;
+}
+
+.forgot-pass p {
+    font-weight: 300;
+    color: #474646;
+    align-self: flex-start;
+    display: flex;
+    margin: 5px 0;
+}
