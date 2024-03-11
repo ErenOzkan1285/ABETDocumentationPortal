@@ -2,21 +2,23 @@ from sqlalchemy import ForeignKeyConstraint
 from flaskbitirme import db, login_manager
 from flask_login import UserMixin
 
-# For Admin class
 @login_manager.user_loader
-def load_admin(admin_id):
-    return Admin.query.get(int(admin_id))
-
-# For Instructor class
-@login_manager.user_loader
-def load_instructor(instructor_id):
-    return Instructor.query.get(int(instructor_id))
-
-# For Coordinator class
-@login_manager.user_loader
-def load_coordinator(coordinator_id):
-    return Coordinator.query.get(int(coordinator_id))
-
+def load_user(user_id):
+    # Query the base User class to get the userType
+    user = db.session.query(User).filter_by(id=user_id).first()
+    
+    if user:
+        # Depending on the userType, return the corresponding subclass instance
+        if user.userType == 'Admin':
+            return Admin.query.get(user_id)
+        elif user.userType == 'Instructor':
+            return Instructor.query.get(user_id)
+        elif user.userType == 'Coordinator':
+            return Coordinator.query.get(user_id)
+        else:
+            # Handle other user types or raise an error if needed
+            pass
+    return None  # User not found
 
 ### MANY-TO-MANY RELATIONSHIP EXTRA TABLES ###
 # Relationship table for CourseObjective and PerformanceIndicator (many-to-many)
@@ -75,36 +77,47 @@ assessmentitem_performanceindicator = db.Table('assessmentitem_performanceindica
 
 ### END OF MANY-TO-MANY RELATIONSHIP EXTRA TABLES ###
 
+class User(db.Model, UserMixin):
+    __tablename__ = 'User'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(50), unique=True, nullable=False)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    surname = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False) 
+    userType = db.Column(db.String(20), default = 'User')
 
-class Admin(db.Model, UserMixin):
+    __mapper_args__ = {
+        'polymorphic_identity': 'user',
+        'polymorphic_on': userType
+    }
+    
+class Admin(User):
     __tablename__ = 'Admin'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-    surname = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)  
+    id = db.Column(db.Integer, db.ForeignKey('User.id'), primary_key=True)
     departments = db.relationship('Department', backref='admin', lazy=True)
+    
+    __mapper_args__ = {
+        'polymorphic_identity': 'Admin',
+    }
 
-
-class Instructor(db.Model, UserMixin):
+class Instructor(User):
     __tablename__ = 'Instructor'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-    surname = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)  
+    id = db.Column(db.Integer, db.ForeignKey('User.id'), primary_key=True)
     course_instances = db.relationship('CourseInstance', backref='instructor', lazy=True)
+    
+    __mapper_args__ = {
+        'polymorphic_identity': 'Instructor',
+    }
 
-
-class Coordinator(db.Model, UserMixin):
+class Coordinator(User):
     __tablename__ = 'Coordinator'
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    name = db.Column(db.String(50), unique=True, nullable=False)
-    surname = db.Column(db.String(50), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)  
+    id = db.Column(db.Integer, db.ForeignKey('User.id'), primary_key=True)
     department_code = db.Column(db.String(5), db.ForeignKey('Department.department_code'))
-
+    
+    __mapper_args__ = {
+        'polymorphic_identity': 'Coordinator',
+    }
+    
 
 class Department(db.Model):
     __tablename__ = 'Department'

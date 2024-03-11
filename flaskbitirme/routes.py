@@ -2,16 +2,16 @@ from flask import render_template, request, jsonify, url_for, redirect
 from flaskbitirme import app, db, bcrypt
 import pandas as pd
 from flaskbitirme.models import *
-from flask_login import login_user, current_user, logout_user
+from flask_login import login_user, current_user, logout_user, login_required
 
 df = pd.DataFrame()  # Initialize an empty DataFrame
 all_sheets = {}
 
 
 @app.route('/upload', methods=['GET', 'POST'])
+@login_required
 def home():
-    if not current_user.is_authenticated:
-        return redirect(url_for('login'))  # Redirect to the login page if the user is not authenticated
+    print("home func:", current_user.name)
     
     global df
     global all_sheets
@@ -51,7 +51,13 @@ def home():
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        print(current_user.email)
+        return redirect(url_for('dashboard'))
+    
+    
     if request.method == 'POST':
+        
         email = request.form['email']
         password = request.form['password']
 
@@ -59,35 +65,37 @@ def login():
         admin = Admin.query.filter_by(email=email).first()
         if admin and bcrypt.check_password_hash(admin.password, password):
             login_user(admin)
-            # Set session variable or perform any other necessary actions
-            return render_template('dashboard.html')  # Redirect to admin dashboard
-        
+            print(current_user.email)
+            return redirect(url_for('dashboard'))  # Redirect to admin dashboard
+
         # Check if the user is an Instructor
         instructor = Instructor.query.filter_by(email=email).first()
-        #print(instructor.email)
         if instructor and bcrypt.check_password_hash(instructor.password, password):
             login_user(instructor)
-            print('instructor logged in')
-            # Set session variable or perform any other necessary actions
-            return render_template('dashboard.html')  # Redirect to instructor dashboard
-        
-        
+            print(current_user.email)
+            return redirect(url_for('dashboard'))  # Redirect to instructor dashboard
+
         # Check if the user is a Coordinator
         coordinator = Coordinator.query.filter_by(email=email).first()
         if coordinator and bcrypt.check_password_hash(coordinator.password, password):
             login_user(coordinator)
-            # Set session variable or perform any other necessary actions
-            return render_template('dashboard.html')  # Redirect to coordinator dashboard
+            print(current_user.email)
+            return redirect(url_for('dashboard'))  # Redirect to coordinator dashboard
         
     return render_template('login.html')
 
 @app.route('/logout')
+@login_required
 def logout():
     logout_user()
+    print(current_user)
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
     if request.method == 'POST':
         name = request.form['name']
         surname = request.form['surname']
@@ -121,11 +129,11 @@ def register():
 
         # Create a new user object and add it to the appropriate table in the database
         if role == 'Admin':
-            new_user = Admin(name=name,surname=surname,email=email,password=hashed_password)
+            new_user = Admin(name=name, surname=surname, email=email, password=hashed_password)
         elif role == 'Instructor':
-            new_user = Instructor(name=name,surname=surname,email=email,password=hashed_password)
+            new_user = Instructor(name=name, surname=surname, email=email, password=hashed_password)
         elif role == 'Coordinator':
-            new_user = Coordinator(name=name,surname=surname,email=email,password=hashed_password)
+            new_user = Coordinator(name=name, surname=surname, email=email, password=hashed_password)
         else:
             # This should never happen due to the earlier check, but included for completeness
             error = "Invalid role."
@@ -137,6 +145,39 @@ def register():
 
     # If the request method is GET, simply render the signup page
     return render_template('register.html')
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # Render the dashboard.html template
+    return render_template('dashboard.html')
+
+
+@app.route('/process')
+@login_required
+def process():
+    global all_sheets
+
+    if 'secondpage' in all_sheets:
+        try:
+            # Assuming 'secondpage' is the sheet in your DataFrame
+            second_page_df = all_sheets['secondpage']
+
+            # Drop rows with NaN values in the 'score' column
+            second_page_df = second_page_df.dropna(subset=['score'])
+
+            # Extract the 'score' column data as a list
+            score_column_data = second_page_df['score'].tolist()
+
+            # Render the process.html template and pass the 'score' column data
+            return render_template('process.html', score_column_data=score_column_data)
+        except Exception as e:
+            return render_template('process.html', message=f'Error processing second page data: {str(e)}')
+    else:
+        return render_template('process.html', message="No page(tab) called 'secondpage'")
+
+
 
 
 # API ENDPOINTS
@@ -173,36 +214,6 @@ def get_second_page_data():
             return jsonify({'message': f'Error processing second page: {str(e)}'})
     else:
         return jsonify({"message": "No page(tab) called 'Survey'"})
-
-
-@app.route('/dashboard')
-def dashboard():
-    # Render the dashboard.html template
-    return render_template('dashboard.html')
-
-
-@app.route('/process')
-def process():
-    global all_sheets
-
-    if 'secondpage' in all_sheets:
-        try:
-            # Assuming 'secondpage' is the sheet in your DataFrame
-            second_page_df = all_sheets['secondpage']
-
-            # Drop rows with NaN values in the 'score' column
-            second_page_df = second_page_df.dropna(subset=['score'])
-
-            # Extract the 'score' column data as a list
-            score_column_data = second_page_df['score'].tolist()
-
-            # Render the process.html template and pass the 'score' column data
-            return render_template('process.html', score_column_data=score_column_data)
-        except Exception as e:
-            return render_template('process.html', message=f'Error processing second page data: {str(e)}')
-    else:
-        return render_template('process.html', message="No page(tab) called 'secondpage'")
-
 
 
 """
