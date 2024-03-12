@@ -12,7 +12,7 @@ all_sheets = {}
 @login_required
 def home():
     print("home func:", current_user.name)
-    
+
     global df
     global all_sheets
 
@@ -53,11 +53,10 @@ def home():
 def login():
     if current_user.is_authenticated:
         print(current_user.email)
-        return redirect(url_for('dashboard'))
-    
-    
+        return redirect(url_for('course_list'))
+
     if request.method == 'POST':
-        
+
         email = request.form['email']
         password = request.form['password']
 
@@ -66,23 +65,24 @@ def login():
         if admin and bcrypt.check_password_hash(admin.password, password):
             login_user(admin)
             print(current_user.email)
-            return redirect(url_for('dashboard'))  # Redirect to admin dashboard
+            return redirect(url_for('course_list'))  # Redirect to admin dashboard
 
         # Check if the user is an Instructor
         instructor = Instructor.query.filter_by(email=email).first()
         if instructor and bcrypt.check_password_hash(instructor.password, password):
             login_user(instructor)
             print(current_user.email)
-            return redirect(url_for('dashboard'))  # Redirect to instructor dashboard
+            return redirect(url_for('course_list'))  # Redirect to instructor dashboard
 
         # Check if the user is a Coordinator
         coordinator = Coordinator.query.filter_by(email=email).first()
         if coordinator and bcrypt.check_password_hash(coordinator.password, password):
             login_user(coordinator)
             print(current_user.email)
-            return redirect(url_for('dashboard'))  # Redirect to coordinator dashboard
-        
+            return redirect(url_for('course_list'))  # Redirect to coordinator dashboard
+
     return render_template('login.html')
+
 
 @app.route('/logout')
 @login_required
@@ -91,11 +91,12 @@ def logout():
     print(current_user)
     return redirect(url_for('login'))
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    
+
     if request.method == 'POST':
         name = request.form['name']
         surname = request.form['surname']
@@ -123,7 +124,7 @@ def register():
         if existing_user:
             error = f"{role} username already exists. Please choose a different username."
             return render_template('register.html', error=error)
-        
+
         # Encrypt the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
@@ -154,6 +155,13 @@ def dashboard():
     return render_template('dashboard.html')
 
 
+@app.route('/course')
+@login_required
+def course_list():
+    # Render the dashboard.html template
+    return render_template('courses.html')
+
+
 @app.route('/process')
 @login_required
 def process():
@@ -176,8 +184,6 @@ def process():
             return render_template('process.html', message=f'Error processing second page data: {str(e)}')
     else:
         return render_template('process.html', message="No page(tab) called 'secondpage'")
-
-
 
 
 # API ENDPOINTS
@@ -234,6 +240,7 @@ def getPerformanceIndicators():
     return jsonify(indicators_list)
 """
 
+
 @app.route('/api/performanceindicators', methods=['GET'])
 def getPerformanceIndicators():
     course_code = request.args.get('course_code')
@@ -241,7 +248,7 @@ def getPerformanceIndicators():
     semester = request.args.get('semester')
 
     query = PerformanceIndicator.query.join(CourseInstancePerformanceIndicator,
-                                             CourseInstancePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
+                                            CourseInstancePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
         join(CourseInstance, ((CourseInstancePerformanceIndicator.course_instance_code == CourseInstance.course_code) &
                               (CourseInstancePerformanceIndicator.course_instance_year == CourseInstance.year) &
                               (CourseInstancePerformanceIndicator.course_instance_semester == CourseInstance.semester)))
@@ -266,14 +273,12 @@ def getPerformanceIndicators():
     return jsonify(indicators_list)
 
 
-
-
 @app.route('/api/studentoutcomes', methods=['GET'])
 def getStudentOutcomes():
     department_code = request.args.get('department_code')
 
     if department_code is None:
-        student_outcomes = StudentOutcome.query.all()  #if it's not specified all studentoutcomes will come
+        student_outcomes = StudentOutcome.query.all()  # if it's not specified all studentoutcomes will come
     else:
         student_outcomes = StudentOutcome.query.filter_by(department_code=department_code).all()
 
@@ -297,10 +302,10 @@ def getCourseObjective():
     result_co = db.session.query(CourseObjective.description, CourseObjective.id) \
         .join(CourseObjectiveScore, CourseObjective.id == CourseObjectiveScore.course_objective_id) \
         .filter(
-            CourseObjectiveScore.course_code == course_code,
-            CourseObjectiveScore.year == year,
-            CourseObjectiveScore.semester == semester
-        ).all()
+        CourseObjectiveScore.course_code == course_code,
+        CourseObjectiveScore.year == year,
+        CourseObjectiveScore.semester == semester
+    ).all()
 
     indicators_list = [
         {
@@ -314,45 +319,20 @@ def getCourseObjective():
     return jsonify(indicators_list)
 
 
-
-@app.route('/api/instructor/courses', methods=['GET'])
-def get_instructor_courses():
-    #take instructors name??
-    instructor_name = request.args.get('name')
-
-    instructor = Instructor.query.filter_by(name=instructor_name).first()
-
-    # if instructor exist
-    if instructor:
-        course_instances = instructor.course_instances
-
-        courses_info = []
-        for course_instance in course_instances:
-            course_info = {
-                'course_code': course_instance.course_code,
-                'year': course_instance.year,
-                'semester': course_instance.semester
-            }
-            courses_info.append(course_info)
-
-        return jsonify({'instructor': instructor_name, 'courses': courses_info})
-    else:
-        # if instructor is not exist
-        return jsonify({'message': f"Instructor {instructor_name} not found"}), 404
-
+from flask import jsonify
 
 
 @app.route('/api/instructor/courses', methods=['GET'])
 def get_instructor_selected_courses():
-    instructor_name = request.args.get('name')
+    instructor_email = current_user.email
     year = request.args.get('year')
     semester = request.args.get('semester')
 
-    instructor = Instructor.query.filter_by(name=instructor_name).first()
+    instructor = Instructor.query.filter_by(email=instructor_email).first()
 
-    # if instructor exist
     if instructor:
-        course_instances = CourseInstance.query.filter_by(instructor_id=instructor.id, year=year, semester=semester).all()
+        course_instances = CourseInstance.query.filter_by(instructor_id=instructor.id, year=year,
+                                                          semester=semester).all()
 
         courses_info = []
         for course_instance in course_instances:
@@ -363,13 +343,12 @@ def get_instructor_selected_courses():
             }
             courses_info.append(course_info)
 
-        return jsonify({'instructor': instructor_name, 'courses': courses_info})
+        return jsonify({'instructor_name': instructor.name, 'courses_info': courses_info})
     else:
-        # if instructor is not exist
-        return jsonify({'message': f"Instructor {instructor_name} not found"}), 404
+        return jsonify({'message': f"Instructor with email {instructor_email} not found"}), 404
 
 
-#all courses of a program that have been opened according to the selected year and semester
+# all courses of a program that have been opened according to the selected year and semester
 @app.route('/api/courses', methods=['GET'])
 def get_courses_by_filter():
     year = request.args.get('year')

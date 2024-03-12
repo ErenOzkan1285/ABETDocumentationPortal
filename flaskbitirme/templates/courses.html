@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+
+{% block title %}Courses{% endblock %}
+
+{% block content %}
+    <p id="instructor-name">Welcome, {{ instructor_name }}!</p>
+
+    <div class="courses">
+        <ul class="course-list" id="course-list"></ul>
+    </div>
+
+    <script type="text/javascript">
+        const year = 2023;
+        const semester = 'S';
+
+        const url = `/api/instructor/courses?year=${year}&semester=${semester}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                // Handle the response data
+                document.getElementById('instructor-name').innerText = 'Welcome, ' + data.instructor_name + '!';
+
+                const coursesList = document.getElementById('course-list');
+
+                // Dynamically populate course list with actual data from the server
+                data.courses_info.forEach(course_info => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'course-item';
+
+                    const link = document.createElement('a');
+                    link.href = '#';  // Replace '#' with the actual link or route
+                    link.className = 'course-link';
+                    link.textContent = course_info.course_code;
+
+                    listItem.appendChild(link);
+                    coursesList.appendChild(listItem);
+                });
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    </script>
+{% endblock %}
