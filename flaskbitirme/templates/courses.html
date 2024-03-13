@@ -30,7 +30,7 @@
                     listItem.className = 'course-item';
 
                     const link = document.createElement('a');
-                    link.href = '#';  // Replace '#' with the actual link or route
+                    link.href = `/upload?coursecode=${course_info.course_code}`;  // Pass course code via URL parameter
                     link.className = 'course-link';
                     link.textContent = course_info.course_code;
 

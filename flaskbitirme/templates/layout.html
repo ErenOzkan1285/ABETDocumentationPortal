@@ -44,20 +44,58 @@
         <!-- Navbar items and links -->
         <ul class="navbar-nav ml-auto">
             {% if current_user.is_authenticated %}
-            <li class="nav-item">
-                <a class="nav-link" href="/dashboard">Dashboard</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/upload">Upload Excel file</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/logout">Log Out</a>
-            </li>
-            <li class="nav-item">
-                <div class="nav-link">{{ current_user.email }}</div>
-            </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/upload">Upload Excel file</a>
+                </li>
+                {% if current_user.userType == 'Instructor' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Courses
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown" id="course-dropdown">
+                            <script type="text/javascript">
+                                async function fetchCourses() {
+                                    const year = 2023;
+                                    const semester = 'S';
+                                    const url = `/api/instructor/courses?year=${year}&semester=${semester}`;
+
+                                    try {
+                                        const response = await fetch(url);
+                                        const data = await response.json();
+
+                                        const coursesDropdown = document.getElementById('course-dropdown');
+                                        data.courses_info.forEach(course_info => {
+                                            const listItem = document.createElement('a');
+                                            listItem.className = 'dropdown-item';
+                                            listItem.href = `/upload?coursecode=${course_info.course_code}`;
+                                            listItem.textContent = course_info.course_code;
+                                            coursesDropdown.appendChild(listItem);
+                                        });
+                                    } catch (error) {
+                                        console.error(error);
+                                    }
+                                }
+
+                                fetchCourses();
+                            </script>
+                        </div>
+                    </li>
+                {% endif %}
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Log Out</a>
+                </li>
+                <li class="nav-item">
+                    <div class="nav-link">{{ current_user.email }}</div>
+                </li>
             {% endif %}
+
         </ul>
+
     </div>
 </nav>
 

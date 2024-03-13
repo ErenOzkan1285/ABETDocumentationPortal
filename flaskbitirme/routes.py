@@ -243,6 +243,7 @@ def getPerformanceIndicators():
 
 @app.route('/api/performanceindicators', methods=['GET'])
 def getPerformanceIndicators():
+
     course_code = request.args.get('course_code')
     year = request.args.get('year')
     semester = request.args.get('semester')
