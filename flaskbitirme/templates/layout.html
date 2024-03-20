@@ -25,7 +25,6 @@
 <body>
 
 <!-- Navigation bar using Bootstrap's navbar component -->
-<!-- Navigation bar using Bootstrap's navbar component -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <!-- Navbar brand and logo -->
     <a class="navbar-brand" href="/">
@@ -48,7 +47,7 @@
                     <a class="nav-link" href="/dashboard">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/upload">Upload Excel file</a>
+                    <a class="nav-link" href="/course" id="upload-link">Upload Excel file</a>
                 </li>
                 {% if current_user.userType == 'Instructor' %}
                     <li class="nav-item dropdown">
@@ -75,6 +74,10 @@
                                             listItem.textContent = course_info.course_code;
                                             coursesDropdown.appendChild(listItem);
                                         });
+
+                                        // Enable the upload link once courses are fetched
+                                        const uploadLink = document.getElementById('upload-link');
+                                        uploadLink.removeAttribute('disabled');
                                     } catch (error) {
                                         console.error(error);
                                     }
@@ -93,9 +96,7 @@
                     <div class="nav-link">{{ current_user.email }}</div>
                 </li>
             {% endif %}
-
         </ul>
-
     </div>
 </nav>
 
