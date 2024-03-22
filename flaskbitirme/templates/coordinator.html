@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+
+{% block title %}Coordinator Panel{% endblock %}
+
+{% block content %}
+    <link rel="stylesheet" type="text/css" href="../static/styles.css">
+    <div class="coordinator-container">
+        <div class="square">
+            <h2>List of Courses</h2>
+            <ul>
+                <li>Course 1</li>
+                <li>Course 2</li>
+                <li>Course 3</li>
+                <!-- Add more courses as needed -->
+            </ul>
+        </div>
+        <div class="square">
+            <h2>List of Instructors</h2>
+            <ul>
+                <li>Instructor 1</li>
+                <li>Instructor 2</li>
+                <li>Instructor 3</li>
+                <!-- Add more instructors as needed -->
+            </ul>
+        </div>
+    </div>
+
+{% endblock %}

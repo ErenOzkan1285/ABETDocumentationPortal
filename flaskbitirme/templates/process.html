@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+<!-- process.html -->
+
 {% extends "layout.html" %}
 
 {% block title %}Process{% endblock %}
@@ -8,7 +9,6 @@
     <div class="container">
         <div class="score-container">
             <h2>Excel Preview</h2>
-            <!-- Table to display processed data -->
             <table class="table table-bordered" id="survey">
                 <thead>
                 <tr>
@@ -27,77 +27,137 @@
                 <button type="submit" id="go-back" class="btn btn-back btn-lg">Go Back</button>
                 <button type="submit" id="download" class="btn btn-result btn-lg">Download</button>
             </div>
-
         </div>
     </div>
 
     <script type="text/javascript">
-        function fetchSurvey() {
-            fetch('/api/secondpage')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Fetched data:', data);
-                    data = data[6];
-                    var tbody = document.getElementById('processed-table-body');
+        function fetchCourseObjectives() {
+            return fetch('/api/courseobjectives')
+                .then(response => response.json());
+        }
 
-                    if (typeof data === 'object' && Object.keys(data).length > 0) {
+        function fetchStudentScores() {
+            return fetch('/api/secondpage')
+                .then(response => response.json());
+        }
 
-                        var questionNames = Object.keys(data).sort();
+        function extractNumericPart(key) {
+            var match = key.match(/Q(\d+)/);
+            return match ? match[1] : null;
+        }
 
-                        questionNames.forEach(question => {
-                            var tr = document.createElement('tr');
 
-                            var tdQuestion = document.createElement('td');
-                            tdQuestion.textContent = '';
-                            tdQuestion.classList.add('align-left');
+        function updateTableWithData(courseObjectivesData, studentScoreObject) {
+            var tbody = document.getElementById('processed-table-body');
 
-                            var tdPis = document.createElement('td');
-                            tdPis.textContent = 'PI-f1';
+            if (Array.isArray(courseObjectivesData) && typeof studentScoreObject === 'object') {
+                var courseObjectivesDict = {};
 
-                            var tdTargetScore = document.createElement('td');
-                            tdTargetScore.textContent = '3.00';
-
-                            var tdStudentScore = document.createElement('td');
-                            tdStudentScore.textContent = parseFloat(data[question]).toFixed(2);
-
-                            var tdActualScore = document.createElement('td');
-                            var tdStatus = document.createElement('td');
-
-                            if (tdPis.textContent === 'PI-f1') {
-                                const queryParams = new URLSearchParams(window.location.search);
-                                const piWeightResultString = queryParams.get('PI-f1');
-                                const piWeightResult = JSON.parse(piWeightResultString);
-
-                                const actualScore = piWeightResult * 5;
-
-                                tdActualScore.textContent = actualScore.toFixed(2);
-
-                                if (actualScore > parseFloat(tdTargetScore.textContent)) {
-                                    tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
-                                } else {
-                                    tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
-                                }
-                            }
-
-                            tr.appendChild(tdQuestion);
-                            tr.appendChild(tdPis);
-                            tr.appendChild(tdTargetScore);
-                            tr.appendChild(tdActualScore);
-                            tr.appendChild(tdStudentScore);
-                            tr.appendChild(tdStatus);
-
-                            tbody.appendChild(tr);
-                        });
-                    } else {
-                        console.error('Invalid data structure or empty data.');
+                courseObjectivesData.forEach(item => {
+                    if (!(item.id in courseObjectivesDict)) {
+                        courseObjectivesDict[item.id] = {
+                            description: item.description || '',
+                            related_pis: '',
+                            student_score: 0,
+                        };
                     }
-                })
-                .catch(error => console.error('Error fetching data:', error));
+
+                    if (courseObjectivesDict[item.id].related_pis) {
+                        courseObjectivesDict[item.id].related_pis += ', ' + item.performance_indicator_id;
+                    } else {
+                        courseObjectivesDict[item.id].related_pis = item.performance_indicator_id || '';
+                    }
+                });
+
+                for (var key in studentScoreObject) {
+                    var numericPart = extractNumericPart(key);
+                    if (courseObjectivesDict[numericPart]) {
+                        courseObjectivesDict[numericPart].student_score = studentScoreObject[key];
+                    }
+                }
+
+                for (var id in courseObjectivesDict) {
+                    var tr = document.createElement('tr');
+
+                    var tdQuestion = document.createElement('td');
+                    tdQuestion.textContent = courseObjectivesDict[id].description;
+
+                    var tdPis = document.createElement('td');
+                    tdPis.textContent = courseObjectivesDict[id].related_pis;
+
+                    var tdTargetScore = document.createElement('td');
+                    tdTargetScore.textContent = '3.00';
+
+                    var tdActualScore = document.createElement('td');
+                    var piValues = tdPis.textContent.split(', ');
+                    var sum = 0
+
+                    piValues.forEach(function (pi) {
+                        const queryParams = new URLSearchParams(window.location.search);
+                        const piWeightResultString = queryParams.get(pi);
+                        const piWeightResult = JSON.parse(piWeightResultString);
+
+                        sum = sum + piWeightResult;
+                    });
+
+                    var averagePI = sum / piValues.length;
+                    tdActualScore.textContent = (averagePI * 5).toFixed(2)
+
+                    var tdStudentScore = document.createElement('td');
+                    tdStudentScore.textContent = parseFloat(courseObjectivesDict[id].student_score).toFixed(3);
+
+                    var tdStatus = document.createElement('td');
+
+                    if (parseFloat(tdActualScore.textContent) >= parseFloat(tdTargetScore.textContent)) {
+                        tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
+                    } else {
+                        tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
+                    }
+
+
+                    tr.appendChild(tdQuestion);
+                    tr.appendChild(tdPis);
+                    tr.appendChild(tdTargetScore);
+                    tr.appendChild(tdActualScore);
+                    tr.appendChild(tdStudentScore);
+                    tr.appendChild(tdStatus);
+
+                    tbody.appendChild(tr);
+                }
+            } else {
+                console.error('Invalid data structure or empty data.');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            fetchSurvey();
-        });
+            const courseObjectivesPromise = fetchCourseObjectives();
+
+            const studentScoresPromise = fetchStudentScores();
+
+            Promise.all([courseObjectivesPromise, studentScoresPromise])
+                .then(([courseObjectivesData, studentScoresData]) => {
+
+                    console.log('Fetched course objectives data:', courseObjectivesData);
+                    console.log('Fetched student scores data:', studentScoresData);
+
+                    const studentScoreObject = studentScoresData[6];
+
+                    updateTableWithData(courseObjectivesData, studentScoreObject);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+
+            document.getElementById('download').addEventListener('click', function () {
+                $("#survey").table2excel({
+                    name: "Worksheet Name",
+                    filename: "Survey.xls",
+                    preserveColors: true
+                });
+            });
+
+            document.getElementById('go-back').addEventListener('click', function () {
+                window.history.back();
+            });
+        })
     </script>
 
 {% endblock %}
