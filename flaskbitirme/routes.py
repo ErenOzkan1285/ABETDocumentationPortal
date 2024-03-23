@@ -293,9 +293,14 @@ def getStudentOutcomes():
     return jsonify(indicators_list)
 
 
+@app.route('/soCalculation')
+def soCalculation():
+    return render_template('soCalculation.html')
+
+
 @app.route('/api/courseobjectives', methods=['GET'])
 def getCourseObjective():
-    course_code = request.args.get('course_code')
+    """course_code = request.args.get('course_code')
     year = request.args.get('year')
     semester = request.args.get('semester')
 
@@ -316,7 +321,26 @@ def getCourseObjective():
     ]
 
     print(result_co)
-    return jsonify(indicators_list)
+    return jsonify(indicators_list)"""
+
+    course_code = request.args.get('course_code')
+
+    course_objectives = CourseObjective.query.filter_by(course_code=course_code).all()
+    print(course_objectives)
+    print(len(course_objectives))
+    results = []
+
+    for objective in course_objectives:
+        print(f"Processing CourseObjective ID: {objective.id}")
+        performance_indicators = [pi.id for pi in objective.performance_indicators]
+        print(f"Performance Indicators: {performance_indicators}")
+        results.append({
+            'course_objective_id': objective.id,
+            'description': objective.description,
+            'performance_indicators': performance_indicators
+        })
+        print(results)
+        return jsonify(results)
 
 
 from flask import jsonify
@@ -376,13 +400,13 @@ def calculate_student_outcomes():
     start_year = data['start_year']
     end_year = data['end_year']
 
-    #dates btw
+    # dates btw
     filtered_courses = CourseInstancePerformanceIndicator.query.filter(
         CourseInstancePerformanceIndicator.course_instance_semester.in_([start_semester, end_semester]),
         CourseInstancePerformanceIndicator.course_instance_year.between(start_year, end_year)
     ).all()
 
-    #avg of pi
+    # avg of pi
     pi_averages = {}
     for course in filtered_courses:
         pi_id = course.performance_indicator_id
@@ -394,7 +418,7 @@ def calculate_student_outcomes():
     for pi_id, data in pi_averages.items():
         pi_averages[pi_id] = data['total'] / data['count'] if data['count'] else 0
 
-    #match the pı's with the so and calculate summation of so
+    # match the pı's with the so and calculate summation of so
     student_outcomes_sums = {}
     for pi_id, pi_avg in pi_averages.items():
         related_sos = db.session.query(
@@ -410,12 +434,12 @@ def calculate_student_outcomes():
             student_outcomes_sums[so_id]['total'] += pi_avg
             student_outcomes_sums[so_id]['count'] += 1
 
-    #calculate so avg
+    # calculate so avg
     student_outcomes_averages = {}
     for so_id, data in student_outcomes_sums.items():
         student_outcomes_averages[so_id] = data['total'] / data['count'] if data['count'] else 0
 
-    #return so
+    # return so
     student_outcomes_response = {f'SO-{so_id}': avg for so_id, avg in student_outcomes_averages.items()}
 
     return jsonify(student_outcomes_response)
@@ -442,3 +466,22 @@ def save_course_instance_performance_indicators():
     db.session.add(new_element)
     db.session.commit()
     return render_template('dashboard.html')
+
+
+"""@app.route('/get_course_objectives', methods=['GET'])
+def get_course_objectives():
+
+    course_code = request.args.get('course_code')
+
+    course_objectives = CourseObjective.query.filter_by(course_code=course_code).all()
+
+    results = []
+    for objective in course_objectives:
+        performance_indicators = [pi.id for pi in objective.performance_indicators]
+        results.append({
+            'course_objective_id': objective.id,
+            'description': objective.description,
+            'performance_indicators': performance_indicators
+        })
+
+    return jsonify(results)"""

@@ -34,14 +34,13 @@
         function fetchCourseObjectives() {
             const queryParams = new URLSearchParams(window.location.search);
             const courseCode = queryParams.get('coursecode');
-            const year = 2023;
-            const semester = 'S';
 
-            const url = `/api/courseobjectives?course_code=${courseCode}&semester=${semester}&year=${year}`;
+
+            const url = `/api/courseobjectives?course_code=${courseCode}`;
 
             return fetch(url)
                 .then(response => response.json());
-                a
+
         }
 
         function fetchStudentScores() {
@@ -56,15 +55,15 @@
 
         function updateTableWithData(courseObjectivesData, studentScoreObject) {
             var tbody = document.getElementById('processed-table-body');
-
+            console.log(courseObjectivesData);
             if (Array.isArray(courseObjectivesData) && typeof studentScoreObject === 'object') {
                 var courseObjectivesDict = {};
-
                 courseObjectivesData.forEach(item => {
-                    if (!(item.id in courseObjectivesDict)) {
-                        courseObjectivesDict[item.id] = {
+                    var objectiveId = item.related_pis; // Use the correct key
+                    if (!(objectiveId in courseObjectivesDict)) {
+                        courseObjectivesDict[objectiveId] = {
                             description: item.description || '',
-                            related_pis: '',
+                            related_pis: item.performance_indicators.join(', '), // Concatenate PIs
                             student_score: 0,
                         };
                     }
@@ -140,6 +139,12 @@
 
             const studentScoresPromise = fetchStudentScores();
 
+            const queryParams = new URLSearchParams(window.location.search);
+            const piWeightsString = queryParams.get('piWeights');
+            const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+
+            console.log('PIWeights:', piWeights);
+
             Promise.all([courseObjectivesPromise, studentScoresPromise])
                 .then(([courseObjectivesData, studentScoresData]) => {
 
@@ -152,13 +157,75 @@
                 })
                 .catch(error => console.error('Error fetching data:', error));
 
-            document.getElementById('download').addEventListener('click', function () {
-                $("#survey").table2excel({
-                    name: "Worksheet Name",
-                    filename: "Survey.xls",
-                    preserveColors: true
-                });
+            document.getElementById('download').addEventListener('click', async function () {
+                // Fetch performance indicator data before downloading
+                try {
+                    const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+                    const courseCode = queryParams.get('coursecode');
+                    if (courseCode) {
+                        await sendPerformanceIndicatorData(piWeights, courseCode);
+                        // Once data is sent, trigger the download
+                        $("#survey").table2excel({
+                            name: "Worksheet Name",
+                            filename: "Survey.xls",
+                            preserveColors: true
+                        });
+                    } else {
+                        console.error('No course code provided.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
             });
+
+
+            async function sendPerformanceIndicatorData(piWeights, courseCode) {
+                // Iterate over piWeights to send each indicator's data to the server
+                for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
+                    // Extract average and standard deviation
+                    const average = piWeights.piAverageSuccess[indicatorId];
+                    const stdDev = piWeights.piStdSuccess[indicatorId];
+                    const description = ''; // You need to define how to get the description
+                    const year = "2023"
+                    const semester = "S"
+                    // Construct the data payload
+                    const data = {
+                        course_instance_code: courseCode,
+                        course_instance_year: year,
+                        course_instance_semester: semester,
+                        performance_indicator_id: indicatorId,
+                        weight: weight,
+                        average: average,
+                        std_dev: stdDev,
+                        description: description
+                    };
+
+                    try {
+                        // Send data to the server using fetch
+                        const response = await fetch('/save_course_instance_performance_indicators', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (response.ok) {
+                            // Handle success if needed
+                            console.log('Data saved successfully for indicator:', indicatorId);
+                        } else {
+                            // Handle error if needed
+                            console.error('Failed to save data for indicator:', indicatorId, response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('Error saving data for indicator:', indicatorId, error);
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Introduce a delay between each POST request
+
 
             document.getElementById('go-back').addEventListener('click', function () {
                 window.history.back();

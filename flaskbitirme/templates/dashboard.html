@@ -13,6 +13,8 @@
             <span>Time: </span>
             <span id="current-time"></span>
         </p>
+        <!-- BURAYA BUTON EKLEDİM SO CALCULATIONS ICIN -->
+        <button onclick="goToAnotherPage()">Go to Another Page</button>
     </div>
     <script>
         function updateTime() {
@@ -29,5 +31,11 @@
 
         // Update the time every second (1000 milliseconds)
         setInterval(updateTime, 1000);
+
+        // Başka bir sayfaya yönlendiren fonksiyon
+        function goToAnotherPage() {
+            // Yönlendirme işlemi
+            window.location.href = "/soCalculation";
+        }
     </script>
 {% endblock %}

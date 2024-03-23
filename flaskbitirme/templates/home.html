@@ -360,7 +360,7 @@
                     .then(piData => {
                         var piAverageSuccess = {};
                         var piStdSuccess = {};
-                        var piWeightSuccess= {};
+                        var piWeightSuccess = {};
 
                         piData.forEach(function (pi) {
                             var piWeights = {};
@@ -397,11 +397,11 @@
 
                             for (var p in piWeights) {
                                 piAverageSuccess[p] = result_Array[Math.floor(result_count / 2)];
-                                piStdSuccess[p] = std_Array[Math.floor(result_count/2)];
-                                piWeightSuccess[p] = piWeights[p]/2;
+                                piStdSuccess[p] = std_Array[Math.floor(result_count / 2)];
+                                piWeightSuccess[p] = piWeights[p] / 2;
                             }
 
-                            resolve({ piAverageSuccess, piStdSuccess, piWeightSuccess });
+                            resolve({piAverageSuccess, piStdSuccess, piWeightSuccess});
                         });
                     })
                     .catch(error => {
@@ -414,17 +414,20 @@
         document.getElementById('generate-bttn').addEventListener('click', function () {
             calculatePIWeight().then(piWeights => {
                 console.log("PIHomepoage:", piWeights);
-                const queryParams = new URLSearchParams(Object.entries(piWeights)).toString();
-                const urlParams = new URLSearchParams(window.location.search)
-                const course_code = urlParams.get('coursecode')
-                // Append the query parameter to the URL
-                window.location.href = `/process?coursecode=${course_code}&${queryParams}`;
+                const queryParams = new URLSearchParams();
+                queryParams.set('piWeights', encodeURIComponent(JSON.stringify(piWeights)));
+                const urlParams = new URLSearchParams(window.location.search);
+                const course_code = urlParams.get('coursecode');
+
+                // Redirect to process.html with query parameters
+                window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
                 // You can use piWeights or perform further operations with it
             }).catch(error => {
                 // Handle error if needed
                 console.error('Error calculating PI weights:', error);
             });
         });
+
 
     </script>
 {% endblock %}

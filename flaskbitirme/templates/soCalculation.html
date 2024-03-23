@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+{% block content %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+    /* Add these styles to your styles.css file for better organization */
+    .form-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: auto; /* Change min-height to height and remove min-height */
+        padding: 20px; /* Add padding for spacing */
+    }
+
+    #calculation-form {
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        width: 100%;
+        max-width: 400px; /* Adjust as necessary */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: adds a subtle shadow */
+    }
+
+    /* Additional styling for form elements */
+    label, input, button {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    input, button {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+
+    button {
+        cursor: pointer;
+        background-color: #007bff;
+        color: white;
+    }
+
+    /* Styling for the submit button */
+    input[type="submit"] {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        text-align: center;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 5px;
+        width: 100%;
+    }
+
+    input[type="submit"]:hover {
+        background-color: #0056b3;
+    }
+</style>
+</head>
+    <body>
+        <div class="form-container">
+            <form id="calculation-form">
+                <label for="start-semester">Start Semester:</label>
+                <input type="text" id="start-semester" name="start-semester"><br>
+
+                <label for="end-semester">End Semester:</label>
+                <input type="text" id="end-semester" name="end-semester"><br>
+
+                <label for="start-year">Start Year:</label>
+                <input type="text" id="start-year" name="start-year"><br>
+
+                <label for="end-year">End Year:</label>
+                <input type="text" id="end-year" name="end-year"><br>
+
+                <input type="submit" value="Submit">
+
+
+                <button type="button" onclick="resetForm()">Reset Form</button>
+            </form>
+        </div>
+
+        <div id="output"></div>
+
+        <script>
+            document.getElementById('calculation-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+
+
+                var startSemester = document.getElementById('start-semester').value;
+                var endSemester = document.getElementById('end-semester').value;
+                var startYear = document.getElementById('start-year').value;
+                var endYear = document.getElementById('end-year').value;
+
+
+                var requestData = {
+                    start_semester: startSemester,
+                    end_semester: endSemester,
+                    start_year: startYear,
+                    end_year: endYear
+                };
+
+                // send AJAX request
+                fetch('/calculate_student_outcomes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                })
+                .then(response => response.json())
+                .then(data => {
+
+                    document.getElementById('output').innerText = JSON.stringify(data);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+
+            // Reset form function
+            function resetForm() {
+                document.getElementById('calculation-form').reset();
+            }
+        </script>
+    </body>
+{% endblock %}
+</html>
