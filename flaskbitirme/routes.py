@@ -438,7 +438,10 @@ def calculate_student_outcomes():
     student_outcomes_averages = {}
     for so_id, data in student_outcomes_sums.items():
         student_outcomes_averages[so_id] = data['total'] / data['count'] if data['count'] else 0
-
+    print(start_year)
+    print(end_year)
+    print(start_semester)
+    print(end_semester)
     # return so
     student_outcomes_response = {f'SO-{so_id}': avg for so_id, avg in student_outcomes_averages.items()}
 
