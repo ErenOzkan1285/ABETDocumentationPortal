@@ -32,7 +32,14 @@
 
     <script type="text/javascript">
         function fetchCourseObjectives() {
-            return fetch('/api/courseobjectives')
+            const queryParams = new URLSearchParams(window.location.search);
+            const courseCode = queryParams.get('coursecode');
+            const year = 2023;
+            const semester = 'S';
+
+            const url = `/api/courseobjectives?course_code=${courseCode}&semester=${semester}&year=${year}`;
+
+            return fetch(url)
                 .then(response => response.json());
         }
 
@@ -45,7 +52,6 @@
             var match = key.match(/Q(\d+)/);
             return match ? match[1] : null;
         }
-
 
         function updateTableWithData(courseObjectivesData, studentScoreObject) {
             var tbody = document.getElementById('processed-table-body');
@@ -113,7 +119,6 @@
                     } else {
                         tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
                     }
-
 
                     tr.appendChild(tdQuestion);
                     tr.appendChild(tdPis);
