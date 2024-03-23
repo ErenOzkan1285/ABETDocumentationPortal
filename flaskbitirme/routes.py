@@ -415,10 +415,18 @@ def calculate_student_outcomes():
     for so_id, data in student_outcomes_sums.items():
         student_outcomes_averages[so_id] = data['total'] / data['count'] if data['count'] else 0
 
+    print(start_year)
+    print(end_year)
+    print(start_semester)
+    print(end_semester)
     #return so
     student_outcomes_response = {f'SO-{so_id}': avg for so_id, avg in student_outcomes_averages.items()}
 
     return jsonify(student_outcomes_response)
+
+@app.route('/soCalculation')
+def soCalculation():
+    return render_template('soCalculation.html')
 
 
 @app.route('/save_course_instance_performance_indicators', methods=['POST'])
