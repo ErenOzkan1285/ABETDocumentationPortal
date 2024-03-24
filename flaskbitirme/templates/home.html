@@ -132,6 +132,7 @@
                     outofCell.disabled = !checkbox.checked;
 
                     calculateNormalizedScores(checkbox)
+                    calculateNormalizedStd(checkbox)
 
                     if (!checkbox.checked) {
                         outofInput.value = '';
@@ -304,6 +305,7 @@
             });
         });
 
+        //Calculating Normalized Scores
         function calculateNormalizedScores(checkbox) {
             const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
             const outof = parseFloat(checkboxDataDictionary[checkbox.value].outof);
@@ -316,6 +318,21 @@
                 checkboxDataDictionary[checkbox.value].normalizedScore = normalizedScore;
             } else {
                 console.error('Invalid values for normalization:', avg, outof);
+            }
+        }
+
+        //Calculating Normalized Standard Deviations
+        function calculateNormalizedStd(checkbox) {
+            const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
+            const std = parseFloat(checkboxDataDictionary[checkbox.value].stdDev);
+
+            if (!isNaN(avg) && !isNaN(std) && std !== 0) {
+                const normalizedStd = (std / avg).toFixed(2);
+                console.log('Normalized StdDev:', normalizedStd);
+
+                checkboxDataDictionary[checkbox.value].normalizedStd = normalizedStd;
+            } else {
+                console.error('Invalid values for normalization:', avg, std);
             }
         }
 
@@ -341,12 +358,15 @@
                 fetch('/api/performanceindicators')
                     .then(response => response.json())
                     .then(piData => {
-                        var piWeightResult = {};
-                        // Loop through the PI data
+                        var piAverageSuccess = {};
+                        var piStdSuccess = {};
+                        var piWeightSuccess = {};
+
                         piData.forEach(function (pi) {
-                            var piWeights = {}; // Store PI weights with respective IDs
+                            var piWeights = {};
                             var result_count = 0
                             var result_Array = []
+                            var std_Array = []
                             var piId = pi.id;
 
                             for (var checkboxValue in checkboxDataDictionary) {
@@ -354,6 +374,7 @@
                                 var selectedPis = checkboxData.selectedPis;
                                 var weight = parseFloat(checkboxData.weight);
                                 var normalizedScore = parseFloat(checkboxData.normalizedScore)
+                                var normalizedStd = parseFloat(checkboxData.normalizedStd)
 
                                 const isPiIdIncluded = selectedPis.some(pi => pi.id === piId);
                                 if (selectedPis && weight && isPiIdIncluded) {
@@ -363,8 +384,10 @@
                                     piWeights[piId] += weight;
 
                                     result_Array[result_count] = normalizedScore
+                                    std_Array[result_count] = normalizedStd
                                     result_count += 1
                                     console.log(result_Array)
+                                    console.log(std_Array)
                                 }
                             }
 
@@ -373,10 +396,12 @@
                             }
 
                             for (var p in piWeights) {
-                                piWeightResult[p] = result_Array[Math.floor(result_count / 2)];
+                                piAverageSuccess[p] = result_Array[Math.floor(result_count / 2)];
+                                piStdSuccess[p] = std_Array[Math.floor(result_count / 2)];
+                                piWeightSuccess[p] = piWeights[p] / 2;
                             }
 
-                            resolve(piWeightResult);
+                            resolve({piAverageSuccess, piStdSuccess, piWeightSuccess});
                         });
                     })
                     .catch(error => {
@@ -388,16 +413,21 @@
 
         document.getElementById('generate-bttn').addEventListener('click', function () {
             calculatePIWeight().then(piWeights => {
-                console.log("PIHomepoage:",piWeights);
-                const queryParams = new URLSearchParams(Object.entries(piWeights)).toString();
-                // Append the query parameter to the URL
-                window.location.href = '/process?' + queryParams;
+                console.log("PIHomepoage:", piWeights);
+                const queryParams = new URLSearchParams();
+                queryParams.set('piWeights', encodeURIComponent(JSON.stringify(piWeights)));
+                const urlParams = new URLSearchParams(window.location.search);
+                const course_code = urlParams.get('coursecode');
+
+                // Redirect to process.html with query parameters
+                window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
                 // You can use piWeights or perform further operations with it
             }).catch(error => {
                 // Handle error if needed
                 console.error('Error calculating PI weights:', error);
             });
         });
+
 
     </script>
 {% endblock %}

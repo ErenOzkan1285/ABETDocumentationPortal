@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+<!-- process.html -->
+
 {% extends "layout.html" %}
 
 {% block title %}Process{% endblock %}
@@ -8,7 +9,6 @@
     <div class="container">
         <div class="score-container">
             <h2>Excel Preview</h2>
-            <!-- Table to display processed data -->
             <table class="table table-bordered" id="survey">
                 <thead>
                 <tr>
@@ -27,77 +27,210 @@
                 <button type="submit" id="go-back" class="btn btn-back btn-lg">Go Back</button>
                 <button type="submit" id="download" class="btn btn-result btn-lg">Download</button>
             </div>
-
         </div>
     </div>
 
     <script type="text/javascript">
-        function fetchSurvey() {
-            fetch('/api/secondpage')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Fetched data:', data);
-                    data = data[6];
-                    var tbody = document.getElementById('processed-table-body');
+        function fetchCourseObjectives() {
+            const queryParams = new URLSearchParams(window.location.search);
+            const courseCode = queryParams.get('coursecode');
 
-                    if (typeof data === 'object' && Object.keys(data).length > 0) {
 
-                        var questionNames = Object.keys(data).sort();
+            const url = `/api/courseobjectives?course_code=${courseCode}`;
 
-                        questionNames.forEach(question => {
-                            var tr = document.createElement('tr');
+            return fetch(url)
+                .then(response => response.json());
 
-                            var tdQuestion = document.createElement('td');
-                            tdQuestion.textContent = '';
-                            tdQuestion.classList.add('align-left');
+        }
 
-                            var tdPis = document.createElement('td');
-                            tdPis.textContent = 'PI-f1';
+        function fetchStudentScores() {
+            return fetch('/api/secondpage')
+                .then(response => response.json());
+        }
 
-                            var tdTargetScore = document.createElement('td');
-                            tdTargetScore.textContent = '3.00';
+        function extractNumericPart(key) {
+            var match = key.match(/Q(\d+)/);
+            return match ? match[1] : null;
+        }
 
-                            var tdStudentScore = document.createElement('td');
-                            tdStudentScore.textContent = parseFloat(data[question]).toFixed(2);
-
-                            var tdActualScore = document.createElement('td');
-                            var tdStatus = document.createElement('td');
-
-                            if (tdPis.textContent === 'PI-f1') {
-                                const queryParams = new URLSearchParams(window.location.search);
-                                const piWeightResultString = queryParams.get('PI-f1');
-                                const piWeightResult = JSON.parse(piWeightResultString);
-
-                                const actualScore = piWeightResult * 5;
-
-                                tdActualScore.textContent = actualScore.toFixed(2);
-
-                                if (actualScore > parseFloat(tdTargetScore.textContent)) {
-                                    tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
-                                } else {
-                                    tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
-                                }
-                            }
-
-                            tr.appendChild(tdQuestion);
-                            tr.appendChild(tdPis);
-                            tr.appendChild(tdTargetScore);
-                            tr.appendChild(tdActualScore);
-                            tr.appendChild(tdStudentScore);
-                            tr.appendChild(tdStatus);
-
-                            tbody.appendChild(tr);
-                        });
-                    } else {
-                        console.error('Invalid data structure or empty data.');
+        function updateTableWithData(courseObjectivesData, studentScoreObject) {
+            var tbody = document.getElementById('processed-table-body');
+            console.log(courseObjectivesData);
+            if (Array.isArray(courseObjectivesData) && typeof studentScoreObject === 'object') {
+                var courseObjectivesDict = {};
+                courseObjectivesData.forEach(item => {
+                    var objectiveId = item.related_pis; // Use the correct key
+                    if (!(objectiveId in courseObjectivesDict)) {
+                        courseObjectivesDict[objectiveId] = {
+                            description: item.description || '',
+                            related_pis: item.performance_indicators.join(', '), // Concatenate PIs
+                            student_score: 0,
+                        };
                     }
-                })
-                .catch(error => console.error('Error fetching data:', error));
+
+                    if (courseObjectivesDict[item.id].related_pis) {
+                        courseObjectivesDict[item.id].related_pis += ', ' + item.performance_indicator_id;
+                    } else {
+                        courseObjectivesDict[item.id].related_pis = item.performance_indicator_id || '';
+                    }
+                });
+
+                for (var key in studentScoreObject) {
+                    var numericPart = extractNumericPart(key);
+                    if (courseObjectivesDict[numericPart]) {
+                        courseObjectivesDict[numericPart].student_score = studentScoreObject[key];
+                    }
+                }
+
+                for (var id in courseObjectivesDict) {
+                    var tr = document.createElement('tr');
+
+                    var tdQuestion = document.createElement('td');
+                    tdQuestion.textContent = courseObjectivesDict[id].description;
+
+                    var tdPis = document.createElement('td');
+                    tdPis.textContent = courseObjectivesDict[id].related_pis;
+
+                    var tdTargetScore = document.createElement('td');
+                    tdTargetScore.textContent = '3.00';
+
+                    var tdActualScore = document.createElement('td');
+                    var piValues = tdPis.textContent.split(', ');
+                    var sum = 0
+
+                    piValues.forEach(function (pi) {
+                        const queryParams = new URLSearchParams(window.location.search);
+                        const piWeightResultString = queryParams.get(pi);
+                        const piWeightResult = JSON.parse(piWeightResultString);
+
+                        sum = sum + piWeightResult;
+                    });
+
+                    var averagePI = sum / piValues.length;
+                    tdActualScore.textContent = (averagePI * 5).toFixed(2)
+
+                    var tdStudentScore = document.createElement('td');
+                    tdStudentScore.textContent = parseFloat(courseObjectivesDict[id].student_score).toFixed(3);
+
+                    var tdStatus = document.createElement('td');
+
+                    if (parseFloat(tdActualScore.textContent) >= parseFloat(tdTargetScore.textContent)) {
+                        tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
+                    } else {
+                        tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
+                    }
+
+                    tr.appendChild(tdQuestion);
+                    tr.appendChild(tdPis);
+                    tr.appendChild(tdTargetScore);
+                    tr.appendChild(tdActualScore);
+                    tr.appendChild(tdStudentScore);
+                    tr.appendChild(tdStatus);
+
+                    tbody.appendChild(tr);
+                }
+            } else {
+                console.error('Invalid data structure or empty data.');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            fetchSurvey();
-        });
+            const courseObjectivesPromise = fetchCourseObjectives();
+
+            const studentScoresPromise = fetchStudentScores();
+
+            const queryParams = new URLSearchParams(window.location.search);
+            const piWeightsString = queryParams.get('piWeights');
+            const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+
+            console.log('PIWeights:', piWeights);
+
+            Promise.all([courseObjectivesPromise, studentScoresPromise])
+                .then(([courseObjectivesData, studentScoresData]) => {
+
+                    console.log('Fetched course objectives data:', courseObjectivesData);
+                    console.log('Fetched student scores data:', studentScoresData);
+
+                    const studentScoreObject = studentScoresData[6];
+
+                    updateTableWithData(courseObjectivesData, studentScoreObject);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+
+            document.getElementById('download').addEventListener('click', async function () {
+                // Fetch performance indicator data before downloading
+                try {
+                    const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+                    const courseCode = queryParams.get('coursecode');
+                    if (courseCode) {
+                        await sendPerformanceIndicatorData(piWeights, courseCode);
+                        // Once data is sent, trigger the download
+                        $("#survey").table2excel({
+                            name: "Worksheet Name",
+                            filename: "Survey.xls",
+                            preserveColors: true
+                        });
+                    } else {
+                        console.error('No course code provided.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+
+
+            async function sendPerformanceIndicatorData(piWeights, courseCode) {
+                // Iterate over piWeights to send each indicator's data to the server
+                for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
+                    // Extract average and standard deviation
+                    const average = piWeights.piAverageSuccess[indicatorId];
+                    const stdDev = piWeights.piStdSuccess[indicatorId];
+                    const description = ''; // You need to define how to get the description
+                    const year = "2023"
+                    const semester = "S"
+                    // Construct the data payload
+                    const data = {
+                        course_instance_code: courseCode,
+                        course_instance_year: year,
+                        course_instance_semester: semester,
+                        performance_indicator_id: indicatorId,
+                        weight: weight,
+                        average: average,
+                        std_dev: stdDev,
+                        description: description
+                    };
+
+                    try {
+                        // Send data to the server using fetch
+                        const response = await fetch('/save_course_instance_performance_indicators', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (response.ok) {
+                            // Handle success if needed
+                            console.log('Data saved successfully for indicator:', indicatorId);
+                        } else {
+                            // Handle error if needed
+                            console.error('Failed to save data for indicator:', indicatorId, response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('Error saving data for indicator:', indicatorId, error);
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Introduce a delay between each POST request
+
+
+            document.getElementById('go-back').addEventListener('click', function () {
+                window.history.back();
+            });
+        })
     </script>
 
 {% endblock %}
