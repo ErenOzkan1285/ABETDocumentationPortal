@@ -6,11 +6,11 @@
 
 {% block content %}
 
-    <div class="container">
-        <div class="score-container">
-            <h2>Excel Preview</h2>
-            <table class="table table-bordered" id="survey">
-                <thead>
+<div class="container">
+    <div class="score-container">
+        <h2>Excel Preview</h2>
+        <table class="table table-bordered" id="survey">
+            <thead>
                 <tr>
                     <th scope="col" class="col-4">Specific Outcomes of Instructions</th>
                     <th scope="col" class="col-2">PI's</th>
@@ -19,218 +19,224 @@
                     <th scope="col" class="col-2">Student Score</th>
                     <th scope="col" class="col-2">Status</th>
                 </tr>
-                </thead>
-                <tbody id="processed-table-body"></tbody>
-            </table>
+            </thead>
+            <tbody id="processed-table-body"></tbody>
+        </table>
 
-            <div class="d-flex justify-content-between">
-                <button type="submit" id="go-back" class="btn btn-back btn-lg">Go Back</button>
-                <button type="submit" id="download" class="btn btn-result btn-lg">Download</button>
-            </div>
+        <div class="d-flex justify-content-between">
+            <button type="submit" id="go-back" class="btn btn-back btn-lg">Go Back</button>
+            <button type="submit" id="download" class="btn btn-result btn-lg">Download</button>
         </div>
     </div>
+</div>
 
-    <script type="text/javascript">
-        function fetchCourseObjectives() {
-            const queryParams = new URLSearchParams(window.location.search);
-            const courseCode = queryParams.get('coursecode');
+<script type="text/javascript">
+    function fetchCourseObjectives() {
+        const queryParams = new URLSearchParams(window.location.search);
+        const courseCode = queryParams.get('coursecode');
 
 
-            const url = `/api/courseobjectives?course_code=${courseCode}`;
+        const url = `/api/courseobjectives?course_code=${courseCode}`;
 
-            return fetch(url)
-                .then(response => response.json());
+        return fetch(url)
+            .then(response => response.json());
 
-        }
+    }
 
-        function fetchStudentScores() {
-            return fetch('/api/secondpage')
-                .then(response => response.json());
-        }
+    function fetchStudentScores() {
+        return fetch('/api/secondpage')
+            .then(response => response.json());
+    }
 
-        function extractNumericPart(key) {
-            var match = key.match(/Q(\d+)/);
-            return match ? match[1] : null;
-        }
+    function extractNumericPart(key) {
+        var match = key.match(/Q(\d+)/);
+        return match ? match[1] : null;
+    }
 
-        function updateTableWithData(courseObjectivesData, studentScoreObject) {
-            var tbody = document.getElementById('processed-table-body');
-            console.log(courseObjectivesData);
-            if (Array.isArray(courseObjectivesData) && typeof studentScoreObject === 'object') {
-                var courseObjectivesDict = {};
-                courseObjectivesData.forEach(item => {
-                    var objectiveId = item.related_pis; // Use the correct key
-                    if (!(objectiveId in courseObjectivesDict)) {
-                        courseObjectivesDict[objectiveId] = {
-                            description: item.description || '',
-                            related_pis: item.performance_indicators.join(', '), // Concatenate PIs
-                            student_score: 0,
-                        };
-                    }
+    function updateTableWithData(courseObjectivesData, studentScoreObject) {
+        var tbody = document.getElementById('processed-table-body');
 
-                    if (courseObjectivesDict[item.id].related_pis) {
-                        courseObjectivesDict[item.id].related_pis += ', ' + item.performance_indicator_id;
-                    } else {
-                        courseObjectivesDict[item.id].related_pis = item.performance_indicator_id || '';
-                    }
+
+        if (Array.isArray(courseObjectivesData) && typeof studentScoreObject === 'object') {
+            var courseObjectivesDict = {};
+            courseObjectivesData.forEach(item => {
+
+                var objectiveId = item.course_objective_id; // Use the correct key
+                if (!(objectiveId in courseObjectivesDict)) {
+                    courseObjectivesDict[objectiveId - 1] = {
+                        description: item.description || '',
+                        related_pis: item.performance_indicators.join(', '), // Concatenate PIs
+                        student_score: 0,
+                    };
+                }
+                if (courseObjectivesDict[objectiveId - 1].performance_indicators) {
+                    courseObjectivesDict[objectiveId - 1].performance_indicators += ', ' + item.performance_indicator_id;
+                } else {
+                    courseObjectivesDict[objectiveId - 1].performance_indicators = item.performance_indicator_id || '';
+                }
+            });
+
+
+            for (var key in studentScoreObject) {
+                var numericPart = extractNumericPart(key);
+
+                if (courseObjectivesDict[numericPart - 1]) {
+                    courseObjectivesDict[numericPart - 1].student_score = studentScoreObject[key];
+
+                }
+            }
+
+            for (var id in courseObjectivesDict) {
+
+                var tr = document.createElement('tr');
+
+                var tdQuestion = document.createElement('td');
+                tdQuestion.textContent = courseObjectivesDict[id].description;
+
+                var tdPis = document.createElement('td');
+                tdPis.textContent = courseObjectivesDict[id].related_pis;
+
+                var tdTargetScore = document.createElement('td');
+                tdTargetScore.textContent = '3.00';
+
+                var tdActualScore = document.createElement('td');
+                var piValues = tdPis.textContent.split(', ');
+                var sum = 0
+
+                piValues.forEach(function (pi) {
+                    const queryParams = new URLSearchParams(window.location.search);
+                    const piWeightResultString = queryParams.get(pi);
+                    const piWeightResult = JSON.parse(piWeightResultString);
+
+                    sum = sum + piWeightResult;
                 });
 
-                for (var key in studentScoreObject) {
-                    var numericPart = extractNumericPart(key);
-                    if (courseObjectivesDict[numericPart]) {
-                        courseObjectivesDict[numericPart].student_score = studentScoreObject[key];
-                    }
+                var averagePI = sum / piValues.length;
+                tdActualScore.textContent = (averagePI * 5).toFixed(2)
+
+                var tdStudentScore = document.createElement('td');
+
+                tdStudentScore.textContent = parseFloat(courseObjectivesDict[id].student_score).toFixed(3);
+
+                var tdStatus = document.createElement('td');
+
+                if (parseFloat(tdActualScore.textContent) >= parseFloat(tdTargetScore.textContent)) {
+                    tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
+                } else {
+                    tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
                 }
 
-                for (var id in courseObjectivesDict) {
-                    var tr = document.createElement('tr');
+                tr.appendChild(tdQuestion);
+                tr.appendChild(tdPis);
+                tr.appendChild(tdTargetScore);
+                tr.appendChild(tdActualScore);
+                tr.appendChild(tdStudentScore);
+                tr.appendChild(tdStatus);
 
-                    var tdQuestion = document.createElement('td');
-                    tdQuestion.textContent = courseObjectivesDict[id].description;
+                tbody.appendChild(tr);
+            }
+        } else {
+            console.error('Invalid data structure or empty data.');
+        }
+    }
 
-                    var tdPis = document.createElement('td');
-                    tdPis.textContent = courseObjectivesDict[id].related_pis;
+    document.addEventListener('DOMContentLoaded', function () {
+        const courseObjectivesPromise = fetchCourseObjectives();
 
-                    var tdTargetScore = document.createElement('td');
-                    tdTargetScore.textContent = '3.00';
+        const studentScoresPromise = fetchStudentScores();
 
-                    var tdActualScore = document.createElement('td');
-                    var piValues = tdPis.textContent.split(', ');
-                    var sum = 0
+        const queryParams = new URLSearchParams(window.location.search);
+        const piWeightsString = queryParams.get('piWeights');
+        const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
 
-                    piValues.forEach(function (pi) {
-                        const queryParams = new URLSearchParams(window.location.search);
-                        const piWeightResultString = queryParams.get(pi);
-                        const piWeightResult = JSON.parse(piWeightResultString);
+        console.log('PIWeights:', piWeights);
 
-                        sum = sum + piWeightResult;
+        Promise.all([courseObjectivesPromise, studentScoresPromise])
+            .then(([courseObjectivesData, studentScoresData]) => {
+
+                console.log('Fetched course objectives data:', courseObjectivesData);
+                console.log('Fetched student scores data:', studentScoresData);
+
+                const studentScoreObject = studentScoresData[6];
+
+                updateTableWithData(courseObjectivesData, studentScoreObject);
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        document.getElementById('download').addEventListener('click', async function () {
+            // Fetch performance indicator data before downloading
+            try {
+                const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+                const courseCode = queryParams.get('coursecode');
+                if (courseCode) {
+                    await sendPerformanceIndicatorData(piWeights, courseCode);
+                    // Once data is sent, trigger the download
+                    $("#survey").table2excel({
+                        name: "Worksheet Name",
+                        filename: "Survey.xls",
+                        preserveColors: true
+                    });
+                } else {
+                    console.error('No course code provided.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+
+        async function sendPerformanceIndicatorData(piWeights, courseCode) {
+            // Iterate over piWeights to send each indicator's data to the server
+            for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
+                // Extract average and standard deviation
+                const average = piWeights.piAverageSuccess[indicatorId];
+                const stdDev = piWeights.piStdSuccess[indicatorId];
+                const description = ''; // You need to define how to get the description
+                const year = "2023"
+                const semester = "S"
+                // Construct the data payload
+                const data = {
+                    course_instance_code: courseCode,
+                    course_instance_year: year,
+                    course_instance_semester: semester,
+                    performance_indicator_id: indicatorId,
+                    weight: weight,
+                    average: average,
+                    std_dev: stdDev,
+                    description: description
+                };
+
+                try {
+                    // Send data to the server using fetch
+                    const response = await fetch('/save_course_instance_performance_indicators', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
                     });
 
-                    var averagePI = sum / piValues.length;
-                    tdActualScore.textContent = (averagePI * 5).toFixed(2)
-
-                    var tdStudentScore = document.createElement('td');
-                    tdStudentScore.textContent = parseFloat(courseObjectivesDict[id].student_score).toFixed(3);
-
-                    var tdStatus = document.createElement('td');
-
-                    if (parseFloat(tdActualScore.textContent) >= parseFloat(tdTargetScore.textContent)) {
-                        tdStatus.innerHTML = '<strong style="color: green;">Adequate</strong>';
+                    if (response.ok) {
+                        // Handle success if needed
+                        console.log('Data saved successfully for indicator:', indicatorId);
                     } else {
-                        tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
-                    }
-
-                    tr.appendChild(tdQuestion);
-                    tr.appendChild(tdPis);
-                    tr.appendChild(tdTargetScore);
-                    tr.appendChild(tdActualScore);
-                    tr.appendChild(tdStudentScore);
-                    tr.appendChild(tdStatus);
-
-                    tbody.appendChild(tr);
-                }
-            } else {
-                console.error('Invalid data structure or empty data.');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const courseObjectivesPromise = fetchCourseObjectives();
-
-            const studentScoresPromise = fetchStudentScores();
-
-            const queryParams = new URLSearchParams(window.location.search);
-            const piWeightsString = queryParams.get('piWeights');
-            const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
-
-            console.log('PIWeights:', piWeights);
-
-            Promise.all([courseObjectivesPromise, studentScoresPromise])
-                .then(([courseObjectivesData, studentScoresData]) => {
-
-                    console.log('Fetched course objectives data:', courseObjectivesData);
-                    console.log('Fetched student scores data:', studentScoresData);
-
-                    const studentScoreObject = studentScoresData[6];
-
-                    updateTableWithData(courseObjectivesData, studentScoreObject);
-                })
-                .catch(error => console.error('Error fetching data:', error));
-
-            document.getElementById('download').addEventListener('click', async function () {
-                // Fetch performance indicator data before downloading
-                try {
-                    const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
-                    const courseCode = queryParams.get('coursecode');
-                    if (courseCode) {
-                        await sendPerformanceIndicatorData(piWeights, courseCode);
-                        // Once data is sent, trigger the download
-                        $("#survey").table2excel({
-                            name: "Worksheet Name",
-                            filename: "Survey.xls",
-                            preserveColors: true
-                        });
-                    } else {
-                        console.error('No course code provided.');
+                        // Handle error if needed
+                        console.error('Failed to save data for indicator:', indicatorId, response.statusText);
                     }
                 } catch (error) {
-                    console.error('Error:', error);
+                    console.error('Error saving data for indicator:', indicatorId, error);
                 }
-            });
-
-
-            async function sendPerformanceIndicatorData(piWeights, courseCode) {
-                // Iterate over piWeights to send each indicator's data to the server
-                for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
-                    // Extract average and standard deviation
-                    const average = piWeights.piAverageSuccess[indicatorId];
-                    const stdDev = piWeights.piStdSuccess[indicatorId];
-                    const description = ''; // You need to define how to get the description
-                    const year = "2023"
-                    const semester = "S"
-                    // Construct the data payload
-                    const data = {
-                        course_instance_code: courseCode,
-                        course_instance_year: year,
-                        course_instance_semester: semester,
-                        performance_indicator_id: indicatorId,
-                        weight: weight,
-                        average: average,
-                        std_dev: stdDev,
-                        description: description
-                    };
-
-                    try {
-                        // Send data to the server using fetch
-                        const response = await fetch('/save_course_instance_performance_indicators', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(data)
-                        });
-
-                        if (response.ok) {
-                            // Handle success if needed
-                            console.log('Data saved successfully for indicator:', indicatorId);
-                        } else {
-                            // Handle error if needed
-                            console.error('Failed to save data for indicator:', indicatorId, response.statusText);
-                        }
-                    } catch (error) {
-                        console.error('Error saving data for indicator:', indicatorId, error);
-                    }
-                }
-                await new Promise(resolve => setTimeout(resolve, 1000));
             }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
 
-            // Introduce a delay between each POST request
+        // Introduce a delay between each POST request
 
 
-            document.getElementById('go-back').addEventListener('click', function () {
-                window.history.back();
-            });
-        })
-    </script>
+        document.getElementById('go-back').addEventListener('click', function () {
+            window.history.back();
+        });
+    })
+</script>
 
 {% endblock %}

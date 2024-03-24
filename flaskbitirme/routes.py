@@ -400,7 +400,7 @@ def getCourseObjective():
             'performance_indicators': performance_indicators
         })
         print(results)
-        return jsonify(results)
+    return jsonify(results)
 
 
 from flask import jsonify
@@ -411,7 +411,9 @@ def get_instructor_selected_courses():
     instructor_email = current_user.email
     year = request.args.get('year')
     semester = request.args.get('semester')
-
+    print(instructor_email)
+    print(year)
+    print(semester)
     instructor = Instructor.query.filter_by(email=instructor_email).first()
 
     if instructor:
@@ -513,6 +515,7 @@ def calculate_student_outcomes():
     return jsonify(student_outcomes_response)
 
 
+
 @app.route('/save_course_instance_performance_indicators', methods=['POST'])
 def save_course_instance_performance_indicators():
     data = request.json
@@ -525,15 +528,37 @@ def save_course_instance_performance_indicators():
     std_dev = data['std_dev']
     description = data['description']
 
-    new_element = CourseInstancePerformanceIndicator(course_instance_code=course_instance_code,
-                                                     course_instance_year=course_instance_year,
-                                                     course_instance_semester=course_instance_semester,
-                                                     performance_indicator_id=performance_indicator_id, weight=weight,
-                                                     average=average, stdDev=std_dev, description=description)
+    # Query the database for existing entry
+    existing_entry = CourseInstancePerformanceIndicator.query.filter_by(
+        course_instance_code=course_instance_code,
+        course_instance_year=course_instance_year,
+        course_instance_semester=course_instance_semester,
+        performance_indicator_id=performance_indicator_id
+    ).first()
 
-    db.session.add(new_element)
+    if existing_entry:
+        # Update existing entry
+        existing_entry.weight = weight
+        existing_entry.average = average
+        existing_entry.stdDev = std_dev
+        existing_entry.description = description
+    else:
+        # If entry doesn't exist, create a new one
+        new_element = CourseInstancePerformanceIndicator(
+            course_instance_code=course_instance_code,
+            course_instance_year=course_instance_year,
+            course_instance_semester=course_instance_semester,
+            performance_indicator_id=performance_indicator_id, 
+            weight=weight,
+            average=average, 
+            stdDev=std_dev, 
+            description=description
+        )
+        db.session.add(new_element)
+
     db.session.commit()
     return render_template('dashboard.html')
+
 
 
 """@app.route('/get_course_objectives', methods=['GET'])
