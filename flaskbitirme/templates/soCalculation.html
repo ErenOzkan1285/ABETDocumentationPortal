@@ -1,132 +1,180 @@
 <!DOCTYPE html>
 {% extends "layout.html" %}
 {% block content %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-    <style>
-    /* Add these styles to your styles.css file for better organization */
-    .form-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: auto; /* Change min-height to height and remove min-height */
-        padding: 20px; /* Add padding for spacing */
-    }
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Title</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            .container {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px;
+            }
 
-    #calculation-form {
-        padding: 20px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        background-color: #f9f9f9;
-        width: 100%;
-        max-width: 400px; /* Adjust as necessary */
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Optional: adds a subtle shadow */
-    }
+            .input-group {
+                display: flex;
+                flex-direction: column;
+                margin-right: 20px;
+            }
 
-    /* Additional styling for form elements */
-    label, input, button {
-        display: block;
-        width: 100%;
-        margin-bottom: 10px;
-    }
+            label {
+                margin-bottom: 5px;
+            }
 
-    input, button {
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-    }
+            input[type="text"],
+            select {
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #ccc;
+                width: 100%;
+            }
 
-    button {
-        cursor: pointer;
-        background-color: #007bff;
-        color: white;
-    }
+            button {
+                margin-top: 25px;
+                padding: 10px 20px;
+                border-radius: 5px;
+                border: none;
+                background-color: #00b708;
+                color: white;
+                cursor: pointer;
+            }
 
-    /* Styling for the submit button */
-    input[type="submit"] {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        text-align: center;
-        font-size: 16px;
-        cursor: pointer;
-        padding: 10px;
-        border-radius: 5px;
-        width: 100%;
-    }
+            button:hover {
+                background-color: #016e05;
+            }
 
-    input[type="submit"]:hover {
-        background-color: #0056b3;
-    }
-</style>
-</head>
+            #output {
+                margin-top: 20px;
+            }
+
+            .error-message {
+                color: red;
+                margin-top: 10px;
+            }
+
+            #graph-container {
+                width: 100%;
+                height: 400px;
+                margin-top: 20px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            }
+        </style>
+    </head>
     <body>
-        <div class="form-container">
-            <form id="calculation-form">
-                <label for="start-semester">Start Semester:</label>
-                <input type="text" id="start-semester" name="start-semester"><br>
-
-                <label for="end-semester">End Semester:</label>
-                <input type="text" id="end-semester" name="end-semester"><br>
-
-                <label for="start-year">Start Year:</label>
-                <input type="text" id="start-year" name="start-year"><br>
-
-                <label for="end-year">End Year:</label>
-                <input type="text" id="end-year" name="end-year"><br>
-
-                <input type="submit" value="Submit">
-
-
-                <button type="button" onclick="resetForm()">Reset Form</button>
-            </form>
+    <div class="container">
+        <div class="input-group">
+            <label for="start-semester">Start Semester:</label>
+            <select id="start-semester" name="start-semester">
+                <option value="" selected disabled>Select Semester</option>
+                <option value="S">Spring</option>
+                <option value="F">Fall</option>
+            </select>
         </div>
 
-        <div id="output"></div>
+        <div class="input-group">
+            <label for="end-semester">End Semester:</label>
+            <select id="end-semester" name="end-semester">
+                <option value="" selected disabled>Select Semester</option>
+                <option value="S">Spring</option>
+                <option value="F">Fall</option>
+            </select>
+        </div>
 
-        <script>
-            document.getElementById('calculation-form').addEventListener('submit', function(event) {
-                event.preventDefault();
+        <div class="input-group">
+            <label for="start-year">Start Year:</label>
+            <input type="text" id="start-year" name="start-year">
+        </div>
 
+        <div class="input-group">
+            <label for="end-year">End Year:</label>
+            <input type="text" id="end-year" name="end-year">
+        </div>
 
-                var startSemester = document.getElementById('start-semester').value;
-                var endSemester = document.getElementById('end-semester').value;
-                var startYear = document.getElementById('start-year').value;
-                var endYear = document.getElementById('end-year').value;
+        <button onclick="submitData()">Submit</button>
+    </div>
 
+    <div id="error-message" class="error-message" style="display: none;">Please enter start and end year.</div>
 
-                var requestData = {
-                    start_semester: startSemester,
-                    end_semester: endSemester,
-                    start_year: startYear,
-                    end_year: endYear
-                };
+    <div id="graph-container">
+        <canvas id="chart"></canvas>
+    </div>
 
-                // send AJAX request
-                fetch('/calculate_student_outcomes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                })
+    <script>
+        function submitData() {
+            var startSemester = document.getElementById('start-semester').value;
+            var endSemester = document.getElementById('end-semester').value;
+            var startYear = document.getElementById('start-year').value;
+            var endYear = document.getElementById('end-year').value;
+
+            if (!startYear || !endYear) {
+                document.getElementById('error-message').style.display = 'block';
+                return;
+            } else {
+                document.getElementById('error-message').style.display = 'none';
+            }
+
+            var requestData = {
+                start_semester: startSemester,
+                end_semester: endSemester,
+                start_year: startYear,
+                end_year: endYear
+            };
+
+            fetch('/calculate_student_outcomes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
                 .then(response => response.json())
                 .then(data => {
-
+                    renderChart(data);
                     document.getElementById('output').innerText = JSON.stringify(data);
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
-            });
+        }
 
-            // Reset form function
-            function resetForm() {
-                document.getElementById('calculation-form').reset();
-            }
-        </script>
+        function renderChart(data) {
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            const colors = ['rgba(255,87,51,0.5)', 'rgba(51,255,87,0.5)', 'rgba(87,51,255,0.5)', 'rgba(51,255,255,0.5)', '#FF33FF'];
+
+            const ctx = document.getElementById('chart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Student Outcomes',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(31,31,31,0.7)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+
+    </script>
     </body>
 {% endblock %}
 </html>
