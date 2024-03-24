@@ -50,6 +50,14 @@
                 <li class="nav-item">
                     <a class="nav-link" href="/upload">Upload Excel file</a>
                 </li>
+                {% if current_user.userType == 'Coordinator' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/addcourseinstance">AddCourseInstance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/assigncourse">AssignCourse</a>
+                    </li>
+                {% endif %}
                 {% if current_user.userType == 'Instructor' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"

@@ -64,21 +64,18 @@ def login():
         admin = Admin.query.filter_by(email=email).first()
         if admin and bcrypt.check_password_hash(admin.password, password):
             login_user(admin)
-            print(current_user.email)
             return redirect(url_for('course_list'))  # Redirect to admin dashboard
 
         # Check if the user is an Instructor
         instructor = Instructor.query.filter_by(email=email).first()
         if instructor and bcrypt.check_password_hash(instructor.password, password):
             login_user(instructor)
-            print(current_user.email)
             return redirect(url_for('course_list'))  # Redirect to instructor dashboard
 
         # Check if the user is a Coordinator
         coordinator = Coordinator.query.filter_by(email=email).first()
         if coordinator and bcrypt.check_password_hash(coordinator.password, password):
             login_user(coordinator)
-            print(current_user.email)
             return redirect(url_for('course_list'))  # Redirect to coordinator dashboard
 
     return render_template('login.html')
@@ -90,6 +87,82 @@ def logout():
     logout_user()
     print(current_user)
     return redirect(url_for('login'))
+
+@app.route('/assigncourse', methods=['GET', 'POST'])
+@login_required
+def assigncourse():
+    if current_user.userType != 'Coordinator':
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        instructor_id = request.form.get('instructor')
+        courseInstanceData = request.form.get('course_instance')
+        courseInstanceDataList = courseInstanceData.split('-')
+        course_code = courseInstanceDataList[0]
+        year = courseInstanceDataList[1]
+        semester = courseInstanceDataList[2]
+
+        # Fetch the selected instructor and course instance from the database
+        instructor = Instructor.query.get(instructor_id)
+        course_instance = CourseInstance.query.filter_by(course_code=course_code, year=year, semester=semester).first()
+
+        if instructor and course_instance:
+            # Update the course instance with the selected instructor
+            course_instance.instructor_id = instructor.id
+            db.session.commit()
+            return redirect(url_for('dashboard'))
+        else:
+            return redirect(url_for('assigncourse'))
+    else:
+        # Fetch all instructors
+        instructors = Instructor.query.all()
+
+        # Fetch all unassigned course instances
+        unassigned_course_instances = CourseInstance.query.filter_by(instructor_id=None).all()
+
+        return render_template('assigncourse.html', instructors=instructors, unassigned_course_instances=unassigned_course_instances)
+    
+
+@app.route('/addcourseinstance', methods=['GET', 'POST'])
+@login_required
+def addcourseinstance():
+    if current_user.userType != 'Coordinator':
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        # Handle form submission
+        course_code = request.form['course_code']
+        year = request.form['year']
+        semester = request.form['semester']
+
+        # Check if a CourseInstance with the same composite key already exists
+        existing_instance = CourseInstance.query.filter_by(course_code=course_code, year=year, semester=semester).first()
+        if existing_instance:
+            available_courses = Course.query.all()
+            error = 'Instance exists.'
+            return render_template('addcourseinstance.html', courses=available_courses, error=error)
+
+        normalized_score = 0
+        normalized_std = 0
+        std_dev = 0
+        average = 0
+        overall_weight = 0
+        out_of = 0
+        instructor_id = None # Null value for now
+
+        # Create CourseInstance object and add it to the database
+        course_instance = CourseInstance(course_code=course_code, year=year, semester=semester, 
+                                         normalizedScore=normalized_score, normalizedSTD=normalized_std,
+                                         stdDev=std_dev, average=average, overallWeight=overall_weight,
+                                         outOf=out_of, instructor_id=instructor_id)
+        db.session.add(course_instance)
+        db.session.commit()
+
+        return redirect(url_for('course_list'))  
+    else:
+        # Fetch available courses from the database
+        available_courses = Course.query.all()
+        return render_template('addcourseinstance.html', courses=available_courses)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -103,46 +176,31 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        role = request.form['role']
 
         # Check if passwords match
         if password != confirm_password:
             error = "Passwords do not match."
             return render_template('register.html', error=error)
+        
+        existing_admin = Admin.query.filter_by(email=email).first()
+        existing_instructor = Instructor.query.filter_by(email=email).first()
+        existing_coordinator = Coordinator.query.filter_by(email=email).first()
 
-        # Check if username is already taken based on the role
-        if role == 'Admin':
-            existing_user = Admin.query.filter_by(email=email).first()
-        elif role == 'Instructor':
-            existing_user = Instructor.query.filter_by(email=email).first()
-        elif role == 'Coordinator':
-            existing_user = Coordinator.query.filter_by(email=email).first()
-        else:
-            error = "Invalid role."
-            return render_template('register.html', error=error)
-
-        if existing_user:
-            error = f"{role} username already exists. Please choose a different username."
+        # Check if username is already taken based on the email
+        if existing_admin or existing_coordinator or existing_instructor: 
+            error = f"User with {email} already exists. Please choose a different username."
             return render_template('register.html', error=error)
 
         # Encrypt the password
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        # Create a new user object and add it to the appropriate table in the database
-        if role == 'Admin':
-            new_user = Admin(name=name, surname=surname, email=email, password=hashed_password)
-        elif role == 'Instructor':
-            new_user = Instructor(name=name, surname=surname, email=email, password=hashed_password)
-        elif role == 'Coordinator':
-            new_user = Coordinator(name=name, surname=surname, email=email, password=hashed_password)
-        else:
-            # This should never happen due to the earlier check, but included for completeness
-            error = "Invalid role."
-            return render_template('register.html', error=error)
-
+        # Create the instructor 
+        new_user = Instructor(name=name, surname=surname, email=email, password=hashed_password)
+        
+        # Add it to the database
         db.session.add(new_user)
         db.session.commit()
-        return render_template('login.html')
+        return redirect(url_for('login'))
 
     # If the request method is GET, simply render the signup page
     return render_template('register.html')

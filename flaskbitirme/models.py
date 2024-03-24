@@ -207,7 +207,7 @@ class CourseInstance(db.Model):
     overallWeight = db.Column(db.Float, nullable=False)
     outOf = db.Column(db.Float, nullable=False)
 
-    instructor_id = db.Column(db.Integer, db.ForeignKey('Instructor.id'), nullable=False)
+    instructor_id = db.Column(db.Integer, db.ForeignKey('Instructor.id'))
 
     # performance_indicators = db.relationship('PerformanceIndicator',secondary='CourseInstancePerformanceIndicator', back_populates='related_PIs', lazy=True )
 

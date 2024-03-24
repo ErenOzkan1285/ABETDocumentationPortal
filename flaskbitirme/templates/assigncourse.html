@@ -1,0 +1,30 @@
+
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>Assign Course Instances</h1>
+
+    <form action="/assigncourse" method="post">
+        <label for="instructor">Select an instructor:</label>
+        <select name="instructor" id="instructor">
+            {% for instructor in instructors %}
+                <option value="{{ instructor.id }}">{{ instructor.name }} {{ instructor.surname }}</option>
+            {% endfor %}
+        </select>
+        <br>
+        <label for="course_instance">Select a course instance:</label>
+        <select name="course_instance" id="course_instance">
+            {% for course_instance in unassigned_course_instances %}
+                <option value="{{ course_instance.course_code }}-{{ course_instance.year }}-{{ course_instance.semester }}">
+                    {{ course_instance.course_code }} - {{ course_instance.year }} - {{ course_instance.semester }}
+                </option>
+            {% endfor %}
+        </select>
+        <br>
+        <input type="hidden" name="course_code" id="course_code" value="">
+        <input type="hidden" name="year" id="year" value="">
+        <input type="hidden" name="semester" id="semester" value="">
+        <button type="submit">Assign</button>
+    </form>
+
+{% endblock %}

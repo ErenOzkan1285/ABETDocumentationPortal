@@ -1,0 +1,29 @@
+
+{% extends "layout.html" %}
+{% block content %}
+
+<h1>Add Course Instance</h1>
+    {% if error %}
+        <h1>{{ error }}</h1>
+    {% endif %}
+    <form action="/addcourseinstance" method="post">
+        <label for="course_code">Course Code:</label>
+        <select name="course_code" id="course_code">
+            {% for course in courses %}
+                <option value="{{ course.course_code }}">{{ course.course_code }}</option>
+            {% endfor %}
+        </select><br>
+        
+        <label for="year">Year:</label>
+        <input type="number" name="year" required><br>
+        <label for="semester">Semester:</label>
+        <select name="semester" id="semester">
+            <option value="S">Spring</option>
+            <option value="F">Fall</option>
+        </select><br>
+        
+
+        <input type="submit" value="Submit">
+    </form>
+
+{% endblock %}
