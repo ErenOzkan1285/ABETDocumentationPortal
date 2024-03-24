@@ -85,7 +85,6 @@ def login():
 @login_required
 def logout():
     logout_user()
-    print(current_user)
     return redirect(url_for('login'))
 
 @app.route('/coordinator_panel', methods=['GET', 'POST'])
@@ -119,7 +118,7 @@ def coordinator_panel():
 
         # Fetch all unassigned course instances
         unassigned_course_instances = CourseInstance.query.filter_by(instructor_id=None).all()
-        available_courses = Course.query.all()
+        available_courses = Course.query.filter_by(department_code=current_user.department_code).all()
         print(available_courses)
         return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
     
