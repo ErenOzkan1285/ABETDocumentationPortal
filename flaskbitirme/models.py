@@ -122,7 +122,7 @@ class Coordinator(User):
 class Department(db.Model):
     __tablename__ = 'Department'
     department_code = db.Column(db.String(5), primary_key=True)
-    admin_id = db.Column(db.Integer, db.ForeignKey('Admin.id'), nullable=False)
+    admin_id = db.Column(db.Integer, db.ForeignKey('Admin.id'))
     courses = db.relationship('Course', backref='department', lazy=True)
     coordinators = db.relationship('Coordinator', backref='department', lazy=True)
     student_outcomes = db.relationship('StudentOutcome', backref='department', lazy=True)
