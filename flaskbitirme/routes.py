@@ -88,9 +88,9 @@ def logout():
     print(current_user)
     return redirect(url_for('login'))
 
-@app.route('/assigncourse', methods=['GET', 'POST'])
+@app.route('/coordinator_panel', methods=['GET', 'POST'])
 @login_required
-def assigncourse():
+def coordinator_panel():
     if current_user.userType != 'Coordinator':
         return redirect(url_for('dashboard'))
     
@@ -112,15 +112,16 @@ def assigncourse():
             db.session.commit()
             return redirect(url_for('dashboard'))
         else:
-            return redirect(url_for('assigncourse'))
+            return redirect(url_for('coordinator_panel'))
     else:
         # Fetch all instructors
         instructors = Instructor.query.all()
 
         # Fetch all unassigned course instances
         unassigned_course_instances = CourseInstance.query.filter_by(instructor_id=None).all()
-
-        return render_template('assigncourse.html', instructors=instructors, unassigned_course_instances=unassigned_course_instances)
+        available_courses = Course.query.all()
+        print(available_courses)
+        return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
     
 
 @app.route('/addcourseinstance', methods=['GET', 'POST'])
@@ -140,7 +141,7 @@ def addcourseinstance():
         if existing_instance:
             available_courses = Course.query.all()
             error = 'Instance exists.'
-            return render_template('addcourseinstance.html', courses=available_courses, error=error)
+            return render_template('coordinator.html', courses=available_courses, error=error)
 
         normalized_score = 0
         normalized_std = 0
@@ -158,12 +159,13 @@ def addcourseinstance():
         db.session.add(course_instance)
         db.session.commit()
 
+        # Fetch available courses from the database
+        available_courses = Course.query.all()
         return redirect(url_for('course_list'))  
     else:
         # Fetch available courses from the database
         available_courses = Course.query.all()
-        return render_template('addcourseinstance.html', courses=available_courses)
-
+        return render_template('coordinator.html', courses=available_courses)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
