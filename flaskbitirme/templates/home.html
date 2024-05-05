@@ -413,14 +413,26 @@
 
         document.getElementById('generate-bttn').addEventListener('click', function () {
             calculatePIWeight().then(piWeights => {
-                console.log("PIHomepoage:", piWeights);
-                const queryParams = new URLSearchParams();
-                queryParams.set('piWeights', encodeURIComponent(JSON.stringify(piWeights)));
+                console.log("PIHomepage:", piWeights);
                 const urlParams = new URLSearchParams(window.location.search);
                 const course_code = urlParams.get('coursecode');
 
+                const inputElement = document.createElement('input');
+                inputElement.type = 'hidden';
+                inputElement.name = 'piWeights';
+                //inputElement.value = JSON.stringify(piWeights)+ ',' + '"course_code:"'+ course_code 
+                
+                inputElement.value = JSON.stringify(piWeights);
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/process?coursecode='+ course_code;
+                
+                form.appendChild(inputElement);
+                console.log(inputElement)
+                document.body.appendChild(form);
+                form.submit();
                 // Redirect to process.html with query parameters
-                window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
+                //window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
                 // You can use piWeights or perform further operations with it
             }).catch(error => {
                 // Handle error if needed

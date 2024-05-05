@@ -3,6 +3,7 @@ from flaskbitirme import app, db, bcrypt
 import pandas as pd
 from flaskbitirme.models import *
 from flask_login import login_user, current_user, logout_user, login_required
+import json
 
 df = pd.DataFrame()  # Initialize an empty DataFrame
 all_sheets = {}
@@ -119,7 +120,7 @@ def coordinator_panel():
         # Fetch all unassigned course instances
         unassigned_course_instances = CourseInstance.query.filter_by(instructor_id=None).all()
         available_courses = Course.query.filter_by(department_code=current_user.department_code).all()
-        print(available_courses)
+        print(current_user.department_code)
         return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
     
 
@@ -221,28 +222,31 @@ def course_list():
     return render_template('courses.html')
 
 
-@app.route('/process')
+@app.route('/process', methods = ['POST'])
 @login_required
 def process():
     global all_sheets
-
-    if 'secondpage' in all_sheets:
+    if 'Survey' in all_sheets:
         try:
             # Assuming 'secondpage' is the sheet in your DataFrame
-            second_page_df = all_sheets['secondpage']
+            second_page_df = all_sheets['Survey']
 
             # Drop rows with NaN values in the 'score' column
             second_page_df = second_page_df.dropna(subset=['score'])
 
             # Extract the 'score' column data as a list
             score_column_data = second_page_df['score'].tolist()
-
+            
+            
+            pi_weights = request.form.get('piWeights')
+    
+            print("PIWEIGHTS: ", pi_weights)
             # Render the process.html template and pass the 'score' column data
-            return render_template('process.html', score_column_data=score_column_data)
+            return render_template('process.html', score_column_data=score_column_data, pi_weights=pi_weights)
         except Exception as e:
-            return render_template('process.html', message=f'Error processing second page data: {str(e)}')
+            return render_template('process.html', message=f'Error processing second page data: {str(e)}', pi_weights=pi_weights)
     else:
-        return render_template('process.html', message="No page(tab) called 'secondpage'")
+        return render_template('process.html', message="No page(tab) called 'Survey'")
 
 
 # API ENDPOINTS
@@ -514,6 +518,49 @@ def calculate_student_outcomes():
     return jsonify(student_outcomes_response)
 
 
+@app.route('/save_course_objective_score', methods=['POST'])
+def save_course_objective_score():
+    # Get the data from the request
+    data = request.json
+    # Extract data from the request
+    course_objective_id = data['course_objective_id']
+    course_code = data['course_code']
+    year = data['year']
+    semester = data['semester']
+    target_score = data['target_score']
+    actual_score = data['actual_score']
+    student_score = data['student_score']
+    status = data['status']
+    
+    existing_entry = CourseObjectiveScore.query.filter_by(
+        course_objective_id=course_objective_id,
+        course_code=course_code,
+        year=year,
+        semester=semester
+    ).first()
+
+    if existing_entry:
+        # Update existing entry
+        existing_entry.targetScore = target_score
+        existing_entry.actualScore = actual_score
+        existing_entry.studentScore = student_score
+        existing_entry.status = status
+    else:
+        # If entry doesn't exist, create a new one
+        new_element = CourseObjectiveScore(
+            course_objective_id=course_objective_id,
+            course_code=course_code,
+            year=year,
+            semester=semester, 
+            targetScore=target_score,
+            actualScore=actual_score, 
+            studentScore=student_score, 
+            status=status
+        )
+        db.session.add(new_element)
+
+    db.session.commit()
+    return render_template('dashboard.html')
 
 @app.route('/save_course_instance_performance_indicators', methods=['POST'])
 def save_course_instance_performance_indicators():

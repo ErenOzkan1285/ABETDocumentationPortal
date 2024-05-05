@@ -103,10 +103,28 @@
                 var piValues = tdPis.textContent.split(', ');
                 var sum = 0
 
+                const piWeightsString = "{{pi_weights}}";
+                // Extract the JSON part from the string
+                const startIndex = piWeightsString.indexOf('{');
+                const endIndex = piWeightsString.lastIndexOf('}');
+                const jsonSubstring = piWeightsString.substring(startIndex, endIndex + 1);
+
+                // Replace HTML entities with corresponding characters
+                const decodedString = jsonSubstring.replace(/&#34;/g, '"');
+
+                // Parse the JSON string into a JavaScript object
+                const piWeights = JSON.parse(decodedString);
+
+
                 piValues.forEach(function (pi) {
-                    const queryParams = new URLSearchParams(window.location.search);
-                    const piWeightResultString = queryParams.get(pi);
-                    const piWeightResult = JSON.parse(piWeightResultString);
+                    let piWeightResultString = piWeights.piAverageSuccess;
+                    let piWeightResult = piWeightResultString[pi];
+                    if (piWeightResultString[pi] != undefined) {
+                        piWeightResult = JSON.parse(piWeightResultString[pi]);
+                    }
+                    else {
+                        piWeightResult = 0.00;
+                    }
 
                     sum = sum + piWeightResult;
                 });
@@ -145,10 +163,21 @@
 
         const studentScoresPromise = fetchStudentScores();
 
-        const queryParams = new URLSearchParams(window.location.search);
-        const piWeightsString = queryParams.get('piWeights');
-        const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+        //const queryParams = new URLSearchParams(window.location.search);
+        //const piWeightsString = queryParams.get('piWeights');
+        //const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
 
+        const piWeightsString = "{{pi_weights}}";
+        // Extract the JSON part from the string
+        const startIndex = piWeightsString.indexOf('{');
+        const endIndex = piWeightsString.lastIndexOf('}');
+        const jsonSubstring = piWeightsString.substring(startIndex, endIndex + 1);
+
+        // Replace HTML entities with corresponding characters
+        const decodedString = jsonSubstring.replace(/&#34;/g, '"');
+
+        // Parse the JSON string into a JavaScript object
+        const piWeights = JSON.parse(decodedString);
         console.log('PIWeights:', piWeights);
 
         Promise.all([courseObjectivesPromise, studentScoresPromise])
@@ -166,16 +195,32 @@
         document.getElementById('download').addEventListener('click', async function () {
             // Fetch performance indicator data before downloading
             try {
-                const piWeights = piWeightsString ? JSON.parse(decodeURIComponent(piWeightsString)) : null;
+                const piWeightsString = "{{pi_weights}}";
+                // Extract the JSON part from the string
+                const startIndex = piWeightsString.indexOf('{');
+                const endIndex = piWeightsString.lastIndexOf('}');
+                const jsonSubstring = piWeightsString.substring(startIndex, endIndex + 1);
+
+                // Replace HTML entities with corresponding characters
+                const decodedString = jsonSubstring.replace(/&#34;/g, '"');
+
+                // Parse the JSON string into a JavaScript object
+                const piWeights = JSON.parse(decodedString);
+
+                const queryParams = new URLSearchParams(window.location.search);
                 const courseCode = queryParams.get('coursecode');
+
                 if (courseCode) {
                     await sendPerformanceIndicatorData(piWeights, courseCode);
+                    await sendScoreData(courseCode, courseObjectivesPromise);
                     // Once data is sent, trigger the download
                     $("#survey").table2excel({
                         name: "Worksheet Name",
                         filename: "Survey.xls",
                         preserveColors: true
                     });
+
+
                 } else {
                     console.error('No course code provided.');
                 }
@@ -183,6 +228,82 @@
                 console.error('Error:', error);
             }
         });
+
+
+        async function findRowByDescription(description, courseObjectivesData) {
+            try {
+                // Access the resolved value of the courseObjectivesData promise
+                const resolvedData = await courseObjectivesData;
+
+                // Iterate over each item in the resolved data
+                for (const item of resolvedData) {
+                    // Get the description from the item
+                    const itemDescription = item.description.trim();
+
+                    // Check if the description matches
+                    if (itemDescription === description) {
+                        // Return the course_objective_id if found
+                        return item.course_objective_id;
+                    }
+                }
+
+                // Return null if no matching description found
+                return null;
+            } catch (error) {
+                console.error('Error finding row by description:', error);
+                return null;
+            }
+        }
+
+
+
+
+        async function sendScoreData(courseCode, courseObjectivesData) {
+            const tbody = document.getElementById('processed-table-body');
+            const rows = tbody.querySelectorAll('tr');
+
+            for (const row of rows) {
+                const description = row.cells[0].textContent.trim();
+                const course_objective_id = await findRowByDescription(description, courseObjectivesData);
+                const targetScore = row.cells[2].textContent.trim();
+                const actualScore = row.cells[3].textContent.trim();
+                const studentScore = row.cells[4].textContent.trim();
+                const status = row.cells[5].textContent.trim() === 'Adequate' ? 'A' : 'I';
+
+                const data = {
+                    course_objective_id: course_objective_id,
+                    course_code: courseCode,
+                    year: "2023",
+                    semester: "S",
+                    target_score: targetScore,
+                    actual_score: actualScore,
+                    student_score: studentScore,
+                    status: status
+                };
+                try {
+                    console.log("data in sendScoreData", data);
+                    // Send data to the server using fetch
+                    const response = await fetch('/save_course_objective_score', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        // Handle success if needed
+                        console.log('Data saved successfully for:', description);
+                    } else {
+                        // Handle error if needed
+                        console.error('Failed to save data for:', description, response.statusText);
+                    }
+                } catch (error) {
+                    console.error('Error saving data for:', description, error);
+                }
+            }
+        }
+
 
 
         async function sendPerformanceIndicatorData(piWeights, courseCode) {
@@ -227,7 +348,8 @@
                     console.error('Error saving data for indicator:', indicatorId, error);
                 }
             }
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            //await new Promise(resolve => setTimeout(resolve, 1000));
+
         }
 
         // Introduce a delay between each POST request
