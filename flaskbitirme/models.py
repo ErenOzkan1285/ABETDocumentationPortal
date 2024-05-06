@@ -136,6 +136,17 @@ class StudentOutcome(db.Model):
     performance_indicators = db.relationship('PerformanceIndicator', secondary=studentoutcome_performanceindicator,
                                              back_populates='student_outcomes', lazy=True)
 
+class StudentOutcomeDepartment(db.Model):
+    __tablename__ = 'StudentOutcomeDepartment'
+
+
+    student_outcome_id = db.Column(db.String(5), db.ForeignKey('StudentOutcome.id'), primary_key=True)
+    department_code = db.Column(db.String(5), db.ForeignKey('Department.department_code'), primary_key=True)
+
+    # StudentOutcome & Department relation
+    student_outcome = db.relationship('StudentOutcome', backref=db.backref('departments_associations', lazy=True))
+    department = db.relationship('Department', backref=db.backref('student_outcomes_associations', lazy=True))
+    description = db.Column(db.String(120), nullable=False)
 
 class PerformanceIndicator(db.Model):
     __tablename__ = 'PerformanceIndicator'
@@ -169,6 +180,7 @@ class AssessmentItem(db.Model):
     year = db.Column(db.Integer, nullable=False)
     semester = db.Column(db.String(1), nullable=False)
 
+    name = db.Column(db.String(120), nullable=True)
     weight = db.Column(db.Float, nullable=False)
     average = db.Column(db.Float, nullable=False)
     stdDev = db.Column(db.Float, nullable=False)
@@ -237,6 +249,7 @@ class CourseObjectiveScore(db.Model):
     actualScore = db.Column(db.Float, nullable=False)
     studentScore = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(1), nullable=False)
+    notes = db.Column(db.String(255), nullable=True)
 
     # Define the composite foreign key relationship
     course_instance = db.relationship(
