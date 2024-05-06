@@ -1,8 +1,9 @@
-from flask import render_template, request, jsonify, url_for, redirect
+from flask import render_template, request, jsonify, url_for, redirect, flash
 from flaskbitirme import app, db, bcrypt
 import pandas as pd
 from flaskbitirme.models import *
 from flask_login import login_user, current_user, logout_user, login_required
+from sqlalchemy.exc import IntegrityError
 import json
 
 df = pd.DataFrame()  # Initialize an empty DataFrame
@@ -336,7 +337,7 @@ def getPerformanceIndicators():
     return jsonify(indicators_list)
 
 
-@app.route('/api/studentoutcomes', methods=['GET'])
+"""@app.route('/api/studentoutcomes', methods=['GET'])
 def getStudentOutcomes():
     department_code = request.args.get('department_code')
 
@@ -353,7 +354,27 @@ def getStudentOutcomes():
         }
         for indicator in student_outcomes
     ]
-    return jsonify(indicators_list)
+    return jsonify(indicators_list)"""
+
+@app.route('/api/studentoutcomes', methods=['GET'])
+def get_student_outcomes_for_department():
+    department_code = request.args.get('department_code')
+    if not department_code:
+        return jsonify({'error': 'Department code is required'}), 400
+
+    # Querying the database to find all entries in StudentOutcomeDepartment with the given department code
+    outcomes = StudentOutcomeDepartment.query.filter_by(department_code=department_code).all()
+
+    if not outcomes:
+        return jsonify({'error': 'No student outcomes found for this department'}), 404
+
+    # Creating a list of outcomes to return as JSON
+    results = [{
+        'student_outcome_id': outcome.student_outcome_id,
+        'description': outcome.description
+    } for outcome in outcomes]
+
+    return jsonify(results), 200
 
 
 @app.route('/soCalculation')
@@ -624,3 +645,271 @@ def get_course_objectives():
         })
 
     return jsonify(results)"""
+
+#related with the CoursePerformanceIndicator table
+@app.route('/course/performance-indicators', methods=['POST'])
+def get_performance_indicator_ids():
+    # Parse course_code from the JSON request body
+    request_data = request.get_json()
+    course_code = request_data.get('course_code')
+
+    if not course_code:
+        return jsonify({"error": "Course code is required"}), 400
+
+    # Query the course_performance_indicator table for the given course code
+    performance_indicator_ids = db.session.query(
+        CoursePerformanceIndicator.performance_indicator_id
+    ).filter(
+        CoursePerformanceIndicator.course_code == course_code
+    ).all()
+
+    # Convert the query result to a list of IDs
+    performance_indicator_ids = [pi[0] for pi in performance_indicator_ids]
+
+    # Return the list of performance indicator IDs as JSON
+    return jsonify(performance_indicator_ids)
+
+# Admin panel route
+@app.route('/admin_panel', methods=['GET'])
+@login_required
+def admin_panel():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    student_outcomes = StudentOutcomeDepartment.query.all()
+    performance_indicators = PerformanceIndicator.query.all()
+    return render_template('admin.html', student_outcomes=student_outcomes,
+                           performance_indicators=performance_indicators)
+
+
+@app.route('/add_student_outcome', methods=['POST'])
+@login_required
+def add_student_outcome():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    id = request.form['student_outcome_id']
+    department_code = request.form['department_code']
+    description = request.form['description']
+
+    # Department code validation
+    department = Department.query.filter_by(department_code=department_code).first()
+    if not department:
+        flash('Invalid department code.', 'error')
+        return redirect(url_for('admin_panel'))
+
+    existing_outcome = StudentOutcomeDepartment.query.filter_by(student_outcome_id=id, department_code=department_code).first()
+    if existing_outcome:
+        flash('Student Outcome already exists for this department.', 'error')
+    else:
+        new_outcome = StudentOutcomeDepartment(student_outcome_id=id, department_code=department_code, description=description)
+        db.session.add(new_outcome)
+        try:
+            db.session.commit()
+            flash('Student Outcome added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding student outcome: {}'.format(e), 'error')
+    return redirect(url_for('admin_panel'))
+
+
+
+@app.route('/update_student_outcome', methods=['POST'])
+@login_required
+def update_student_outcome():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    id = request.form.get('student_outcome_id')
+    current_department_code = request.form.get('current_department_code')
+    new_department_code = request.form.get('new_department_code')
+    new_description = request.form.get('description')
+
+    if not id or not current_department_code or not new_description:
+        flash('Missing required fields.', 'error')
+        return redirect(url_for('admin_panel'))
+
+    outcome = StudentOutcomeDepartment.query.filter_by(
+        student_outcome_id=id,
+        department_code=current_department_code
+    ).first()
+
+    if outcome:
+        if new_department_code:
+            department_exists = Department.query.filter_by(department_code=new_department_code).first()
+            if department_exists:
+                outcome.department_code = new_department_code
+            else:
+                flash('New department code does not exist.', 'error')
+                return redirect(url_for('admin_panel'))
+
+        outcome.description = new_description
+        try:
+            db.session.commit()
+            flash('Student Outcome updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating student outcome: {}'.format(e), 'error')
+    else:
+        flash('No Student Outcome found with this ID and department code combination.', 'error')
+
+    return redirect(url_for('admin_panel'))
+
+
+
+@app.route('/delete_student_outcome/<student_outcome_id>/<department_code>', methods=['POST'])
+@login_required
+def delete_student_outcome(student_outcome_id, department_code):
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    outcome = StudentOutcomeDepartment.query.filter_by(
+        student_outcome_id=student_outcome_id,
+        department_code=department_code
+    ).first_or_404()
+
+    db.session.delete(outcome)
+    try:
+        db.session.commit()
+        flash('Student Outcome deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting student outcome: {}'.format(e), 'error')
+    return redirect(url_for('admin_panel'))
+
+
+@app.route('/add_performance_indicator', methods=['POST'])
+@login_required
+def add_performance_indicator():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    id = request.form['id']
+    description = request.form['description']
+
+    existing_indicator = PerformanceIndicator.query.filter_by(id=id).first()
+    if existing_indicator:
+        flash('Performance Indicator already exists.', 'error')
+    else:
+        new_indicator = PerformanceIndicator(id=id, description=description)
+        db.session.add(new_indicator)
+        try:
+            db.session.commit()
+            flash('Performance Indicator added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding performance indicator: {}'.format(e), 'error')
+    return redirect(url_for('admin_panel'))
+
+@app.route('/update_performance_indicator', methods=['POST'])
+@login_required
+def update_performance_indicator():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
+
+    id = request.form['id']
+    description = request.form['description']
+
+    indicator = PerformanceIndicator.query.filter_by(id=id).first()
+    if indicator:
+        indicator.description = description
+        try:
+            db.session.commit()
+            flash('Performance Indicator updated successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating performance indicator: {}'.format(e), 'error')
+    else:
+        flash('No Performance Indicator found with this ID', 'error')
+    return redirect(url_for('admin_panel'))
+
+@app.route('/delete_performance_indicator/<id>', methods=['POST'])
+@login_required
+def delete_performance_indicator(id):
+    if current_user.userType != 'Admin':
+        return redirect(url_for('dashboard'))
+
+    indicator = PerformanceIndicator.query.get_or_404(id)
+    db.session.delete(indicator)
+    try:
+        db.session.commit()
+        flash('Performance Indicator deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting performance indicator: {}'.format(e), 'error')
+    return redirect(url_for('admin_panel'))
+
+
+
+@app.route('/add_relationship', methods=['POST'])
+def add_relationship():
+    student_outcome_id = request.form.get('student_outcome_id')
+    performance_indicator_id = request.form.get('performance_indicator_id')
+
+    # Check if the relationship already exists
+    existing_relationship = db.session.query(studentoutcome_performanceindicator).filter(
+        studentoutcome_performanceindicator.c.student_outcome_id == student_outcome_id,
+        studentoutcome_performanceindicator.c.performance_indicator_id == performance_indicator_id
+    ).first()
+
+    if existing_relationship:
+        return jsonify({'error': 'This relationship already exists'}), 409  # Conflict status
+
+    try:
+        # Insert new relationship if not existing
+        new_relationship = studentoutcome_performanceindicator.insert().values(
+            student_outcome_id=student_outcome_id,
+            performance_indicator_id=performance_indicator_id
+        )
+        db.session.execute(new_relationship)
+        db.session.commit()
+        return jsonify({'message': 'Relationship added successfully'}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database integrity error: ' + str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to add relationship: ' + str(e)}), 500
+
+
+@app.route('/delete_relationship/<student_outcome_id>/<performance_indicator_id>', methods=['POST'])
+def delete_relationship(student_outcome_id, performance_indicator_id):
+    try:
+        # Delete the specified relationship
+        delete_relationship = studentoutcome_performanceindicator.delete().where(
+            db.and_(
+                studentoutcome_performanceindicator.c.student_outcome_id == student_outcome_id,
+                studentoutcome_performanceindicator.c.performance_indicator_id == performance_indicator_id
+            )
+        )
+        db.session.execute(delete_relationship)
+        db.session.commit()
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+    except IntegrityError as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database integrity error: ' + str(e)}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete relationship: ' + str(e)}), 500
+
+
+@app.route('/get_initial_data')
+def get_initial_data():
+    outcomes = StudentOutcome.query.all()
+    indicators = PerformanceIndicator.query.all()
+    relationships = db.session.query(
+        studentoutcome_performanceindicator.c.student_outcome_id,
+        studentoutcome_performanceindicator.c.performance_indicator_id
+    ).all()
+
+    return jsonify({
+        'outcomes': [{ 'id': o.id, 'description': o.description } for o in outcomes],
+        'indicators': [{ 'id': i.id, 'description': i.description } for i in indicators],
+        'relationships': [{'student_outcome_id': r[0], 'performance_indicator_id': r[1]} for r in relationships]
+    })
