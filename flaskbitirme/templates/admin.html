@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+{% extends "layout.html" %}
+
+{% block title %}Manage Data{% endblock %}
+
+{% block content %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Manage Data</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .main-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 48%; /* Adjust based on your preference */
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .form-section {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #00b708;
+            color: white;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            margin-top: 15px;
+        }
+
+        label {
+            margin-top: 10px;
+            color: #333333;
+            font-size: 16px;
+        }
+
+        h1 {
+            color: #333333;
+            font-size: 24px;
+        }
+
+        .select-list {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Outcomes</h1>
+        <!-- Form for adding a student outcome -->
+        <form action="/add_student_outcome" method="post">
+            <label for="student_outcome_id">Student Outcome ID:</label>
+            <input type="text" id="student_outcome_id" name="student_outcome_id" required>
+            <label for="department_code">Department Code:</label>
+            <input type="text" id="student_department_code" name="department_code" required>
+            <label for="description">Description:</label>
+            <input type="text" id="student_description" name="description" required>
+            <button type="submit">Add New</button>
+        </form>
+        <!-- Form for updating a student outcome -->
+        <form action="/update_student_outcome" method="post">
+            <label for="student_outcome_id">Student Outcome ID:</label>
+            <input type="text" id="student_outcome_id" name="student_outcome_id" required>
+
+            <label for="current_department_code">Current Department Code:</label>
+            <input type="text" id="current_department_code" name="current_department_code" required>
+
+            <label for="new_department_code">New Department Code (optional):</label>
+            <input type="text" id="new_department_code" name="new_department_code">
+
+            <label for="description">Description:</label>
+            <input type="text" id="description" name="description" required>
+
+            <button type="submit">Update</button>
+        </form>
+
+        <!-- Form for deleting a student outcome -->
+        <form action="" method="post" onsubmit="deleteStudentOutcome(event);">
+            <select id="student_outcome_select" class="select-list">
+                {% for outcome in student_outcomes %}
+                <option value="{{ outcome.student_outcome_id }}_{{ outcome.department_code }}">
+                    {{ outcome.student_outcome_id }} - {{ outcome.description }}
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit">Delete Selected Student Outcome</button>
+        </form>
+
+    </div>
+    <div class="container">
+        <h1>Performance Indicators</h1>
+        <!-- Form for adding a performance indicator -->
+        <form action="/add_performance_indicator" method="post">
+            <label for="id">Performance Indicator ID:</label>
+            <input type="text" id="performance_indicator_id" name="id" required>
+            <label for="description">Description:</label>
+            <input type="text" id="performance_indicator_description" name="description" required>
+            <button type="submit">Add New</button>
+        </form>
+        <!-- Form for updating a performance indicator -->
+        <form action="/update_performance_indicator" method="post">
+            <label for="id">Performance Indicator ID (for update):</label>
+            <input type="text" id="performance_indicator_id_update" name="id" required>
+            <label for="description">Description (for update):</label>
+            <input type="text" id="performance_indicator_description_update" name="description" required>
+            <button type="submit">Update</button>
+        </form>
+        <!-- Form for deleting a performance indicator -->
+        <form onsubmit="deletePerformanceIndicator(event);">
+            <select id="performance_indicator_select" name="id" class="select-list">
+                {% for indicator in performance_indicators %}
+                <option value="{{ indicator.id }}">{{ indicator.id }} - {{ indicator.description }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Delete Selected Performance Indicator</button>
+        </form>
+
+    </div>
+    <!-- New Container for Relating and Deleting Relationships -->
+        <div class="container">
+            <h1>Manage Relationships</h1>
+            <form onsubmit="addRelationship(event);">
+                <label for="student_outcome_rel">Student Outcome ID:</label>
+                <select id="student_outcome_rel" name="student_outcome_id" required>
+                    {% for outcome in student_outcomes %}
+                    <option value="{{ outcome.student_outcome_id }}">{{ outcome.student_outcome_id }} - {{ outcome.description }}</option>
+                    {% endfor %}
+                </select>
+
+                <label for="performance_indicator_rel">Performance Indicator ID:</label>
+                <select id="performance_indicator_rel" name="performance_indicator_id" required>
+                    {% for indicator in performance_indicators %}
+                    <option value="{{ indicator.id }}">{{ indicator.id }} - {{ indicator.description }}</option>
+                    {% endfor %}
+                </select>
+
+                <button type="submit">Relate</button>
+            </form>
+
+            <form onsubmit="deleteRelationship(event);">
+                <select id="relationship_select" name="relationship_id" required>
+                    {% for rel in relationships %}
+                    <option value="{{ rel.student_outcome_id }}_{{ rel.performance_indicator_id }}">
+                        Outcome: {{ rel.student_outcome_id }} - {{ rel.performance_indicator_description }} - Indicator: {{ rel.performance_indicator_id }} - {{ rel.performance_indicator_description }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit">Delete Relationship</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function deleteStudentOutcome(event) {
+            event.preventDefault();  // Prevent the form from submitting traditionally
+            const selectedValues = document.getElementById('student_outcome_select').value.split('_');
+            const studentOutcomeId = selectedValues[0];
+            const departmentCode = selectedValues[1];
+
+            if (confirm('Are you sure you want to delete this Student Outcome?')) {
+                fetch(`/delete_student_outcome/${studentOutcomeId}/${departmentCode}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        // 'X-CSRFToken': csrf_token // Uncomment if CSRF protection is enabled
+                    },
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Student Outcome deleted successfully!');
+                        window.location.reload(); // Reload to reflect changes
+                    } else {
+                        alert('Failed to delete Student Outcome.');
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+
+        function deletePerformanceIndicator(event) {
+            event.preventDefault();  // Prevent the form from submitting in the traditional way
+
+            const selectedId = document.getElementById('performance_indicator_select').value;
+            console.log(`Deleting Performance Indicator with ID: ${selectedId}`);  // Debugging output
+
+            if (confirm('Are you sure you want to delete this Performance Indicator?')) {
+                fetch(`/delete_performance_indicator/${selectedId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        // 'X-CSRFToken': csrf_token // Uncomment if CSRF protection is enabled
+                    },
+                    body: '' // No need to send a body for deletion
+                }).then(response => {
+                    if (response.ok) {
+                        alert('Performance Indicator deleted successfully!');
+                        window.location.reload();  // Reload the page to reflect the changes
+                    } else {
+                        response.text().then(text => alert('Failed to delete Performance Indicator. Server said: ' + text));
+                    }
+                }).catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Check the console for more details.');
+                });
+            }
+        }
+
+        function addRelationship(event) {
+            event.preventDefault();  // Prevent the form from submitting traditionally
+
+            const studentOutcomeId = document.getElementById('student_outcome_rel').value;
+            const performanceIndicatorId = document.getElementById('performance_indicator_rel').value;
+
+            fetch(`/add_relationship`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // 'X-CSRFToken': csrf_token // Uncomment if CSRF protection is enabled
+                },
+                body: `student_outcome_id=${studentOutcomeId}&performance_indicator_id=${performanceIndicatorId}`
+            }).then(response => {
+                if (response.ok) {
+                    alert('Relationship added successfully!');
+                    window.location.reload();  // Reload the page to show the new relationship
+                } else {
+                    response.text().then(text => alert('Failed to add relationship. Server said: ' + text));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Check the console for more details.');
+            });
+        }
+
+        function deleteRelationship(event) {
+            event.preventDefault();  // Prevent the form from submitting in the traditional way
+
+            const relationshipValue = document.getElementById('relationship_select').value;
+            const ids = relationshipValue.split('_');
+            const studentOutcomeId = ids[0];
+            const performanceIndicatorId = ids[1];
+
+            fetch(`/delete_relationship/${studentOutcomeId}/${performanceIndicatorId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    // 'X-CSRFToken': csrf_token // Uncomment if CSRF protection is enabled
+                },
+                body: ''
+            }).then(response => {
+                if (response.ok) {
+                    alert('Relationship deleted successfully!');
+                    window.location.reload();  // Reload the page to reflect the deletion
+                } else {
+                    response.text().then(text => alert('Failed to delete relationship. Server said: ' + text));
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Check the console for more details.');
+            });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchRelationships();
+        });
+
+        function fetchInitialData() {
+            fetch('/get_initial_data')
+            .then(response => response.json())
+            .then(data => {
+                // Only populate if the list is empty, checking if no options exist
+                if (!document.getElementById('student_outcome_select').options.length) {
+                    populateOutcomes(data.outcomes);
+                }
+                populateIndicators(data.indicators);
+                populateRelationships(data.relationships);
+            })
+            .catch(error => console.error('Error loading initial data:', error));
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/get_initial_data')
+            .then(response => response.json())
+            .then(data => {
+                updateStudentOutcomesOnly(data.outcomes);
+                populateIndicators(data.indicators);
+                populateRelationships(data.relationships);
+            })
+            .catch(error => console.error('Error loading initial data:', error));
+        });
+
+        function updateStudentOutcomesOnly() {
+            fetch('/get_student_outcomes')
+            .then(response => response.json())
+            .then(outcomes => {
+                const select = document.getElementById('student_outcome_select');
+                select.innerHTML = '';  // Clear existing options
+                outcomes.forEach(o => {
+                    const option = new Option(`${o.id} - ${o.description}`, o.id);
+                    select.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error updating student outcomes:', error));
+        }
+
+
+        function populateIndicators(indicators) {
+            const select = document.getElementById('performance_indicator_select');
+            select.innerHTML = '';  // Clear existing options
+            indicators.forEach(i => {
+                const option = new Option(`${i.id} - ${i.description}`, i.id);
+                select.appendChild(option);
+            });
+        }
+
+        function populateRelationships(relationships) {
+            const select = document.getElementById('relationship_select');
+            relationships.forEach(r => {
+                const option = new Option(`${r.student_outcome_id} - ${r.performance_indicator_id}`, `${r.student_outcome_id}_${r.performance_indicator_id}`);
+                select.appendChild(option);
+            });
+        }
+
+    </script>
+</body>
+{% endblock %}
