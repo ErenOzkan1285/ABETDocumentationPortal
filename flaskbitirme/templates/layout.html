@@ -57,6 +57,11 @@
                         <a class="nav-link" href="/soCalculation">Statistics</a>
                     </li>
                 {% endif %}
+                {% if current_user.userType == 'Admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin_panel">Admin Panel</a>
+                    </li>
+                {% endif %}
                 {% if current_user.userType == 'Instructor' %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
