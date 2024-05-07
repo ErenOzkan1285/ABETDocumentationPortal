@@ -234,75 +234,79 @@
 
             // Event listener for PI button click to populate the modal
             checkboxList.forEach(function (checkbox) {
-                var piButton = document.getElementById('pi-button-' + checkbox.value);
-                piButton.addEventListener('click', function () {
-                    var checkedCheckbox = checkbox; //Storing the reference for checked checkbox
+            var piButton = document.getElementById('pi-button-' + checkbox.value);
+            piButton.addEventListener('click', async function () {
+                var checkedCheckbox = checkbox; //Storing the reference for checked checkbox
 
-                    const year = 2023;
-                    const semester = 'S';
+                try {
+                    let response = await fetch('/api/latest_semester_year')
+                    response = await response.json();
+                    const year = response.year;
+                    const semester = response.semester;
 
                     const urlParams = new URLSearchParams(window.location.search)
                     const course_code = urlParams.get('coursecode')
 
-                    const url = `/api/performanceindicators?course_code=${course_code}&semester=${semester}&year=${year}`
+                    const url = `/api/performanceindicators?course_code=${course_code}`
                     //Fetching PI's from database to display
-                    fetch(url)
-                        .then(response => response.json())
-                        .then(data => {
-                            //Creating modal with PI details table
-                            var modalBody = document.getElementById('pi-table-body');
-                            modalBody.innerHTML = '';
+                    const fetchResponse = await fetch(url);
+                    const data = await fetchResponse.json();
 
-                            data.forEach(function (pi) {
-                                var row = document.createElement('tr');
+                    //Creating modal with PI details table
+                    var modalBody = document.getElementById('pi-table-body');
+                    modalBody.innerHTML = '';
 
-                                var idCell = document.createElement('td');
-                                idCell.textContent = pi.id;
-                                row.appendChild(idCell);
+                    data.forEach(function (pi) {
+                        var row = document.createElement('tr');
 
-                                var descCell = document.createElement('td');
-                                descCell.textContent = pi.description;
-                                row.appendChild(descCell);
+                        var idCell = document.createElement('td');
+                        idCell.textContent = pi.id;
+                        row.appendChild(idCell);
 
-                                var checkboxCell = document.createElement('td');
-                                var checkbox = document.createElement('input');
-                                checkbox.type = 'checkbox';
-                                checkbox.value = pi.id;
-                                checkbox.id = 'modal-pi-' + checkedCheckbox.value + '-' + pi.id;
-                                checkboxCell.appendChild(checkbox);
-                                row.appendChild(checkboxCell);
+                        var descCell = document.createElement('td');
+                        descCell.textContent = pi.description;
+                        row.appendChild(descCell);
 
-                                modalBody.appendChild(row);
-                            });
+                        var checkboxCell = document.createElement('td');
+                        var checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.value = pi.id;
+                        checkbox.id = 'modal-pi-' + checkedCheckbox.value + '-' + pi.id;
+                        checkboxCell.appendChild(checkbox);
+                        row.appendChild(checkboxCell);
 
-                            //Event listener for Save button in the modal
-                            document.getElementById('savePiButton').addEventListener('click', function () {
-                                // Get selected PI's using the checked checkbox
-                                var selectedPis = [];
-                                data.forEach(function (pi) {
-                                    var checkbox = document.getElementById('modal-pi-' + checkedCheckbox.value + '-' + pi.id);
-                                    if (checkbox.checked) {
-                                        selectedPis.push(pi);
-                                    }
-                                });
+                        modalBody.appendChild(row);
+                    });
 
-                                if (checkbox.checked) {
-                                    if (!checkboxDataDictionary[checkbox.value]) {
-                                        checkboxDataDictionary[checkbox.value] = {};
-                                    }
-                                    checkboxDataDictionary[checkbox.value].selectedPis = selectedPis;
-                                    console.log(checkboxDataDictionary);
-                                }
-                                // Update the selected PI's in the checked checkbox cell
-                                var selectedPisCell = document.getElementById('selected-pis-' + checkedCheckbox.value);
-                                selectedPisCell.textContent = selectedPis.map(pi => pi.id).join(', ');
+                    //Event listener for Save button in the modal
+                    document.getElementById('savePiButton').addEventListener('click', function () {
+                        // Get selected PI's using the checked checkbox
+                        var selectedPis = [];
+                        data.forEach(function (pi) {
+                            var checkbox = document.getElementById('modal-pi-' + checkedCheckbox.value + '-' + pi.id);
+                            if (checkbox.checked) {
+                                selectedPis.push(pi);
+                            }
+                        });
 
-                                $('#piModal').modal('hide');
-                            });
-                        })
-                        .catch(error => console.error('Error fetching performance indicators:', error));
-                });
+                        if (checkbox.checked) {
+                            if (!checkboxDataDictionary[checkbox.value]) {
+                                checkboxDataDictionary[checkbox.value] = {};
+                            }
+                            checkboxDataDictionary[checkbox.value].selectedPis = selectedPis;
+                            console.log(checkboxDataDictionary);
+                        }
+                        // Update the selected PI's in the checked checkbox cell
+                        var selectedPisCell = document.getElementById('selected-pis-' + checkedCheckbox.value);
+                        selectedPisCell.textContent = selectedPis.map(pi => pi.id).join(', ');
+
+                        $('#piModal').modal('hide');
+                    });
+                } catch (error) {
+                    console.error('Error:', error);
+                }
             });
+        });
         });
 
         //Calculating Normalized Scores
