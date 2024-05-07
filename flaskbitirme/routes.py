@@ -308,19 +308,13 @@ def getPerformanceIndicators():
 @app.route('/api/performanceindicators', methods=['GET'])
 def getPerformanceIndicators():
     course_code = request.args.get('course_code')
-    year = request.args.get('year')
-    semester = request.args.get('semester')
 
-    query = PerformanceIndicator.query.join(CourseInstancePerformanceIndicator,
-                                            CourseInstancePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
-        join(CourseInstance, ((CourseInstancePerformanceIndicator.course_instance_code == CourseInstance.course_code) &
-                              (CourseInstancePerformanceIndicator.course_instance_year == CourseInstance.year) &
-                              (CourseInstancePerformanceIndicator.course_instance_semester == CourseInstance.semester)))
+    query = PerformanceIndicator.query.join(CoursePerformanceIndicator,
+                                            CoursePerformanceIndicator.performance_indicator_id == PerformanceIndicator.id). \
+        join(CourseInstance, ((CoursePerformanceIndicator.course_code == CourseInstance.course_code)))
 
-    if course_code and year and semester:
-        query = query.filter((CourseInstance.course_code == course_code) &
-                             (CourseInstance.year == int(year)) &
-                             (CourseInstance.semester == semester))
+    if course_code:
+        query = query.filter((CourseInstance.course_code == course_code))
 
     result = query.all()
 
