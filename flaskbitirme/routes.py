@@ -531,7 +531,24 @@ def calculate_student_outcomes():
     student_outcomes_response = {f'SO-{so_id}': avg for so_id, avg in student_outcomes_averages.items()}
 
     return jsonify(student_outcomes_response)
+    
+@app.route('/api/latest_semester_year', methods=['GET'])
+def get_latest_semester_year():
+    # Query to get the latest course instance year and semester
+    latest_course_instance = db.session.query(
+        CourseInstance.year,
+        CourseInstance.semester
+    ).order_by(
+        CourseInstance.year.desc(),
+        CourseInstance.semester.desc()
+    ).first()
 
+    if latest_course_instance:
+        latest_year, latest_semester = latest_course_instance
+    else:
+        latest_year, latest_semester = '2023', 'S'  # Default values if no data found
+
+    return jsonify({'year': latest_year, 'semester': latest_semester})
 
 @app.route('/save_course_objective_score', methods=['POST'])
 def save_course_objective_score():
