@@ -74,7 +74,15 @@ assessmentitem_performanceindicator = db.Table('assessmentitem_performanceindica
                                                          db.ForeignKey('PerformanceIndicator.id'), primary_key=True)
                                                )
 
+class CoursePerformanceIndicator(db.Model):
+    __tablename__ = 'CoursePerformanceIndicator'
+    course_code = db.Column(db.String(5), db.ForeignKey('Course.course_code'), primary_key=True)
+    performance_indicator_id = db.Column(db.String(5), db.ForeignKey('PerformanceIndicator.id'), primary_key=True)
 
+    # Relationships to Course and PerformanceIndicator
+    course = db.relationship('Course', back_populates='performance_indicators')
+    performance_indicator = db.relationship('PerformanceIndicator', back_populates='courses')
+    
 ### END OF MANY-TO-MANY RELATIONSHIP EXTRA TABLES ###
 
 class User(db.Model, UserMixin):
