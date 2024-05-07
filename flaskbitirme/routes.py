@@ -563,6 +563,7 @@ def save_course_objective_score():
     actual_score = data['actual_score']
     student_score = data['student_score']
     status = data['status']
+    notes = data['notes']
     
     existing_entry = CourseObjectiveScore.query.filter_by(
         course_objective_id=course_objective_id,
