@@ -577,6 +577,7 @@ def save_course_objective_score():
         existing_entry.actualScore = actual_score
         existing_entry.studentScore = student_score
         existing_entry.status = status
+        existing_entry.notes = notes
     else:
         # If entry doesn't exist, create a new one
         new_element = CourseObjectiveScore(
@@ -588,6 +589,7 @@ def save_course_objective_score():
             actualScore=actual_score, 
             studentScore=student_score, 
             status=status
+            notes = notes
         )
         db.session.add(new_element)
 
