@@ -169,7 +169,9 @@ class PerformanceIndicator(db.Model):
                                        back_populates='performance_indicators', lazy=True)
     course_objectives = db.relationship('CourseObjective', secondary=courseobjective_performanceindicator,
                                         back_populates='performance_indicators', lazy=True)
-
+    
+    # New relationship to handle the association with Course
+    courses = db.relationship('CoursePerformanceIndicator', back_populates='performance_indicator')
 
 class Course(db.Model):
     __tablename__ = 'Course'
@@ -177,6 +179,9 @@ class Course(db.Model):
     department_code = db.Column(db.String(5), db.ForeignKey('Department.department_code'), nullable=False)
     course_instances = db.relationship('CourseInstance', backref='course', lazy=True)
     course_objectives = db.relationship('CourseObjective', backref='course', lazy=True)
+
+    # New relationship to handle the association with PerformanceIndicator
+    performance_indicators = db.relationship('CoursePerformanceIndicator', back_populates='course')
 
 
 class AssessmentItem(db.Model):
