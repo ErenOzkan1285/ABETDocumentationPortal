@@ -588,7 +588,7 @@ def save_course_objective_score():
             targetScore=target_score,
             actualScore=actual_score, 
             studentScore=student_score, 
-            status=status
+            status=status,
             notes = notes
         )
         db.session.add(new_element)
