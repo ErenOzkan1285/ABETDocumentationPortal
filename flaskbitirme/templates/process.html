@@ -18,6 +18,7 @@
                     <th scope="col" class="col-2">Actual Score</th>
                     <th scope="col" class="col-2">Student Score</th>
                     <th scope="col" class="col-2">Status</th>
+                    <th scope="col" class="col-2">Instructor Notes</th>
                 </tr>
             </thead>
             <tbody id="processed-table-body"></tbody>
@@ -29,6 +30,11 @@
         </div>
     </div>
 </div>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.rawgit.com/rainabba/jquery-table2excel/1.1.0/dist/jquery.table2excel.min.js"></script>
+
 
 <script type="text/javascript">
     function fetchCourseObjectives() {
@@ -144,12 +150,25 @@
                     tdStatus.innerHTML = '<strong style="color: red;">Inadequate</strong>';
                 }
 
+
+                var tdNotes = document.createElement('td');
+                // Create text input for instructor notes
+                var notesInput = document.createElement('input');
+                notesInput.type = 'text';
+                notesInput.classList.add('form-control'); // Add Bootstrap class if needed
+                notesInput.placeholder = 'Enter notes here...';
+
+                notesInput.style.width = '100%'; // Adjust the width as needed
+
+                tdNotes.appendChild(notesInput);
+
                 tr.appendChild(tdQuestion);
                 tr.appendChild(tdPis);
                 tr.appendChild(tdTargetScore);
                 tr.appendChild(tdActualScore);
                 tr.appendChild(tdStudentScore);
                 tr.appendChild(tdStatus);
+                tr.appendChild(tdNotes);
 
                 tbody.appendChild(tr);
             }
@@ -192,6 +211,8 @@
             })
             .catch(error => console.error('Error fetching data:', error));
 
+
+
         document.getElementById('download').addEventListener('click', async function () {
             // Fetch performance indicator data before downloading
             try {
@@ -213,6 +234,16 @@
                 if (courseCode) {
                     await sendPerformanceIndicatorData(piWeights, courseCode);
                     await sendScoreData(courseCode, courseObjectivesPromise);
+
+                    // Loop through each row and append the value of the Instructor Notes field
+                    const tbody = document.getElementById('processed-table-body');
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const notesInput = row.cells[6].querySelector('input');
+                        const notesValue = notesInput ? notesInput.value.trim() : '';
+                        row.cells[6].textContent = notesValue;
+                    });
+                    
                     // Once data is sent, trigger the download
                     $("#survey").table2excel({
                         name: "Worksheet Name",
@@ -255,12 +286,13 @@
             }
         }
 
-
-
-
         async function sendScoreData(courseCode, courseObjectivesData) {
             const tbody = document.getElementById('processed-table-body');
             const rows = tbody.querySelectorAll('tr');
+
+            const response = await fetch('/api/latest_semester_year');
+
+            const { year, semester } = await response.json();
 
             for (const row of rows) {
                 const description = row.cells[0].textContent.trim();
@@ -269,19 +301,23 @@
                 const actualScore = row.cells[3].textContent.trim();
                 const studentScore = row.cells[4].textContent.trim();
                 const status = row.cells[5].textContent.trim() === 'Adequate' ? 'A' : 'I';
+                const notesInput = row.cells[6].querySelector('input');
+                // Get the value of the input element
+                const notes = notesInput ? notesInput.value.trim() : '';
 
                 const data = {
                     course_objective_id: course_objective_id,
                     course_code: courseCode,
-                    year: "2023",
-                    semester: "S",
+                    year: year,
+                    semester: semester,
                     target_score: targetScore,
                     actual_score: actualScore,
                     student_score: studentScore,
-                    status: status
+                    status: status,
+                    notes: notes
                 };
+                console.log(data)
                 try {
-                    console.log("data in sendScoreData", data);
                     // Send data to the server using fetch
                     const response = await fetch('/save_course_objective_score', {
                         method: 'POST',
@@ -307,29 +343,27 @@
 
 
         async function sendPerformanceIndicatorData(piWeights, courseCode) {
-            // Iterate over piWeights to send each indicator's data to the server
-            for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
-                // Extract average and standard deviation
-                const average = piWeights.piAverageSuccess[indicatorId];
-                const stdDev = piWeights.piStdSuccess[indicatorId];
-                const description = ''; // You need to define how to get the description
-                const year = "2023"
-                const semester = "S"
-                // Construct the data payload
-                const data = {
-                    course_instance_code: courseCode,
-                    course_instance_year: year,
-                    course_instance_semester: semester,
-                    performance_indicator_id: indicatorId,
-                    weight: weight,
-                    average: average,
-                    std_dev: stdDev,
-                    description: description
-                };
+            try {
+                const response = await fetch('/api/latest_semester_year');
+                const { year, semester } = await response.json();
 
-                try {
-                    // Send data to the server using fetch
-                    const response = await fetch('/save_course_instance_performance_indicators', {
+                for (const [indicatorId, weight] of Object.entries(piWeights.piWeightSuccess)) {
+                    const average = piWeights.piAverageSuccess[indicatorId];
+                    const stdDev = piWeights.piStdSuccess[indicatorId];
+                    const description = '';
+
+                    const data = {
+                        course_instance_code: courseCode,
+                        course_instance_year: year,
+                        course_instance_semester: semester,
+                        performance_indicator_id: indicatorId,
+                        weight: weight,
+                        average: average,
+                        std_dev: stdDev,
+                        description: description
+                    };
+
+                    const saveResponse = await fetch('/save_course_instance_performance_indicators', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -337,20 +371,22 @@
                         body: JSON.stringify(data)
                     });
 
-                    if (response.ok) {
-                        // Handle success if needed
-                        console.log('Data saved successfully for indicator:', indicatorId);
+                    if (saveResponse.ok) {
+                        console.log(`Data saved successfully for indicator: ${indicatorId}`);
                     } else {
-                        // Handle error if needed
-                        console.error('Failed to save data for indicator:', indicatorId, response.statusText);
+                        console.error(`Failed to save data for indicator: ${indicatorId}`, saveResponse.statusText);
                     }
-                } catch (error) {
-                    console.error('Error saving data for indicator:', indicatorId, error);
-                }
-            }
-            //await new Promise(resolve => setTimeout(resolve, 1000));
 
+                    // Add a delay (1 second) between each request (optional)
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            } catch (error) {
+                console.error('Error sending performance indicator data:', error);
+            }
         }
+
+
+
 
         // Introduce a delay between each POST request
 
