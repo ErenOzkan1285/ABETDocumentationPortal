@@ -327,7 +327,7 @@ def getPerformanceIndicators():
         for indicator in result
     ]
 
-    print(indicators_list)
+    print("PI LIST", indicators_list)
     return jsonify(indicators_list)
 
 
