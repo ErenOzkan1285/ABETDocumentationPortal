@@ -326,8 +326,6 @@ def getPerformanceIndicators():
         }
         for indicator in result
     ]
-
-    print("PI LIST", indicators_list)
     return jsonify(indicators_list)
 
 
@@ -927,3 +925,49 @@ def get_initial_data():
         'indicators': [{ 'id': i.id, 'description': i.description } for i in indicators],
         'relationships': [{'student_outcome_id': r[0], 'performance_indicator_id': r[1]} for r in relationships]
     })
+
+
+@app.route('/save_assessment_item_details', methods=['POST'])
+def save_assessment_item_details():
+    data = request.json
+    
+    # Ensure that 'assessmentItemsData' exists in the received JSON
+    if 'assessmentItemsData' in data:
+        assessment_items = data['assessmentItemsData']
+        
+        # Iterate over each assessment item
+        for item in assessment_items:
+            course_code = item['course_code']
+            year = item['year']
+            semester = item['semester']
+            weight = item['weight']
+            average = item['average']
+            stdDev = item['stdDev'] 
+            outOf = item['outOf']     
+            name = item['name']
+            selectedPIs = ','.join(pi['id'] for pi in item['selectedPIs'])
+            
+            # Create a new AssessmentItem instance
+            new_item = AssessmentItem(
+                course_code=course_code,
+                year=year,
+                semester=semester,
+                weight=weight,
+                average=average,
+                stdDev=stdDev,
+                outOf=outOf,
+                name=name,
+                selectedPIs=selectedPIs,
+                description = ''
+            )
+            
+            # Add the new item to the database session and commit
+            db.session.add(new_item)
+            db.session.commit()
+    
+    # Redirect to the dashboard or any other appropriate page
+    return render_template('dashboard.html')
+    
+    
+    
+    

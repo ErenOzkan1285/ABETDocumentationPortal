@@ -422,38 +422,89 @@
 
     var checkboxList = document.querySelectorAll('.column-checkbox');
 
-    document.getElementById('generate-bttn').addEventListener('click', function () {
+    document.getElementById('generate-bttn').addEventListener('click', async function () {
 
         if (checkForError()) {
             return;
         }
 
-        calculatePIWeight().then(piWeights => {
-            console.log("PIHomepage:", piWeights);
-            const urlParams = new URLSearchParams(window.location.search);
-            const course_code = urlParams.get('coursecode');
+        var assessmentItemsData = [];
 
-            const inputElement = document.createElement('input');
-            inputElement.type = 'hidden';
-            inputElement.name = 'piWeights';
-            //inputElement.value = JSON.stringify(piWeights)+ ',' + '"course_code:"'+ course_code 
+        try {
+            // Fetch the latest semester and year from the backend
+            let response = await fetch('/api/latest_semester_year');
+            response = await response.json();
+            const year = response.year;
+            const semester = response.semester;
+            const urlParams = new URLSearchParams(window.location.search)
+            const course_code = urlParams.get('coursecode')
+            // Iterate through all checkboxes
+            checkboxList.forEach(function (checkbox) {
+                // If checkbox is checked
+                if (checkbox.checked) {
+                    // Construct data for the assessment item
+                    var data = {
+                        course_code: course_code, // Fill this with appropriate value
+                        year: year, // Use the fetched year
+                        semester: semester, // Use the fetched semester
+                        weight: checkboxDataDictionary[checkbox.value].weight,
+                        average: checkboxDataDictionary[checkbox.value].avg,
+                        stdDev: checkboxDataDictionary[checkbox.value].stdDev,
+                        outOf: checkboxDataDictionary[checkbox.value].outof,
+                        name: checkbox.value,
+                        selectedPIs: checkboxDataDictionary[checkbox.value].selectedPis
+                    };
+                    assessmentItemsData.push(data); // Add data to the array
+                    console.log(assessmentItemsData)
+                }
+            });
 
-            inputElement.value = JSON.stringify(piWeights);
-            const form = document.createElement('form');
-            form.method = 'post';
-            form.action = '/process?coursecode=' + course_code;
+            response = await fetch('/save_assessment_item_details', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ assessmentItemsData: assessmentItemsData })
+            });
 
-            form.appendChild(inputElement);
-            console.log(inputElement)
-            document.body.appendChild(form);
-            form.submit();
-            // Redirect to process.html with query parameters
-            //window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
-            // You can use piWeights or perform further operations with it
-        }).catch(error => {
-            // Handle error if needed
-            console.error('Error calculating PI weights:', error);
-        });
+
+            if (!response.ok) {
+                console.error('Failed to save assessment item details');
+                return; // Stop further processing if saving fails
+            }
+
+            calculatePIWeight().then(piWeights => {
+                console.log("PIHomepage:", piWeights);
+                const urlParams = new URLSearchParams(window.location.search);
+                const course_code = urlParams.get('coursecode');
+
+                const inputElement = document.createElement('input');
+                inputElement.type = 'hidden';
+                inputElement.name = 'piWeights';
+                //inputElement.value = JSON.stringify(piWeights)+ ',' + '"course_code:"'+ course_code 
+
+                inputElement.value = JSON.stringify(piWeights);
+                const form = document.createElement('form');
+                form.method = 'post';
+                form.action = '/process?coursecode=' + course_code;
+
+                form.appendChild(inputElement);
+                console.log(inputElement)
+                document.body.appendChild(form);
+                form.submit();
+                // Redirect to process.html with query parameters
+                //window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
+                // You can use piWeights or perform further operations with it
+            }).catch(error => {
+                // Handle error if needed
+                console.error('Error calculating PI weights:', error);
+            });
+
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
+
     });
 
     function checkForError() {
