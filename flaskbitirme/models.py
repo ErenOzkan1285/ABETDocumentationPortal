@@ -193,6 +193,7 @@ class AssessmentItem(db.Model):
     year = db.Column(db.Integer, nullable=False)
     semester = db.Column(db.String(1), nullable=False)
 
+    selectedPIs = db.Column(db.String(120), nullable=True)
     name = db.Column(db.String(120), nullable=True)
     weight = db.Column(db.Float, nullable=False)
     average = db.Column(db.Float, nullable=False)
