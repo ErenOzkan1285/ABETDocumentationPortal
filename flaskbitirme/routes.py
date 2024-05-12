@@ -940,30 +940,38 @@ def save_assessment_item_details():
             course_code = item['course_code']
             year = item['year']
             semester = item['semester']
-            weight = item['weight']
-            average = item['average']
-            stdDev = item['stdDev'] 
-            outOf = item['outOf']     
             name = item['name']
-            selectedPIs = ','.join(pi['id'] for pi in item['selectedPIs'])
             
-            # Create a new AssessmentItem instance
-            new_item = AssessmentItem(
-                course_code=course_code,
-                year=year,
-                semester=semester,
-                weight=weight,
-                average=average,
-                stdDev=stdDev,
-                outOf=outOf,
-                name=name,
-                selectedPIs=selectedPIs,
-                description = ''
-            )
+            # Check if an assessment item with the same name already exists for the same year, semester, and course
+            existing_item = AssessmentItem.query.filter_by(course_code=course_code, year=year, semester=semester, name=name).first()
             
-            # Add the new item to the database session and commit
-            db.session.add(new_item)
-            db.session.commit()
+            if existing_item:
+                # If an existing item is found, update its details
+                existing_item.weight = item['weight']
+                existing_item.average = item['average']
+                existing_item.stdDev = item['stdDev']
+                existing_item.outOf = item['outOf']
+                existing_item.selectedPIs = ','.join(pi['id'] for pi in item['selectedPIs'])
+            else:
+                # Create a new AssessmentItem instance
+                new_item = AssessmentItem(
+                    course_code=course_code,
+                    year=year,
+                    semester=semester,
+                    weight=item['weight'],
+                    average=item['average'],
+                    stdDev=item['stdDev'],
+                    outOf=item['outOf'],
+                    name=name,
+                    selectedPIs=','.join(pi['id'] for pi in item['selectedPIs']),
+                    description=''
+                )
+                
+                # Add the new item to the database session
+                db.session.add(new_item)
+        
+        # Commit all changes to the database session
+        db.session.commit()
     
     # Redirect to the dashboard or any other appropriate page
     return render_template('dashboard.html')
