@@ -1,4 +1,4 @@
-from flask import render_template, request, jsonify, url_for, redirect, flash
+from flask import render_template, request, jsonify, url_for, redirect, flash, abort
 from flaskbitirme import app, db, bcrypt
 import pandas as pd
 from flaskbitirme.models import *
@@ -28,14 +28,18 @@ def home():
         if file.filename == '':
             return render_template('home.html', message='No selected file')
 
-        all_sheets = pd.read_excel(file, sheet_name=None)
+        try:
+            all_sheets = pd.read_excel(file, sheet_name=None,engine='openpyxl')
+            df = pd.read_excel(file,engine='openpyxl')
+        except:
+            abort(400, 'Invalid file format. Please upload an Excel file.')
         # Access and print each sheet separately
         '''for sheet_name, sheet_df in all_sheets.items():
             print(f"Sheet name: {sheet_name}")
             print(sheet_df)'''
 
         # Read the Excel file into a pandas DataFrame
-        df = pd.read_excel(file)
+        
 
         # Extract table names from the first row
         table_names = df.columns.tolist()
