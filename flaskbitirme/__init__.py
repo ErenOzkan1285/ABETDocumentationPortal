@@ -21,8 +21,8 @@ from flaskbitirme.models import *
 # Now import the fill_database function and call it
 from flaskbitirme.dbScript import fill_database
 
-with app.app_context():
-    fill_database()
+#with app.app_context():
+    #fill_database()
 
 # Import routes at the end to avoid circular imports
 from flaskbitirme import routes

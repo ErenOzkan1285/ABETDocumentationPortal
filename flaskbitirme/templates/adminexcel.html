@@ -1,0 +1,27 @@
+
+{% extends "layout.html" %}
+{% block title %}Admin Excel Upload{% endblock %}
+{% block content %}
+
+<div class="file-upload-container" id="file-upload-container">
+    <div class="text-container">
+        <img src="../static/excel.png" alt="EXCEL" width="60px" height="60px">
+        <h2>Excel File Upload For Database</h2>
+    </div>
+    <form method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Choose a file:</label>
+            <input type="file" class="form-control" name="file" id="file" accept=".xlsx, .xls, .xlsm">
+        </div>
+        <div class="form-group"> 
+            <label for="department_code">Department Code:</label>
+            <input type="text" class="form-control" name="department_code" id="department_code">
+        </div>
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-upload">Upload</button>
+        </div>
+    </form>
+</div>
+
+
+{% endblock %}

@@ -58,7 +58,6 @@ def home():
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        print(current_user.email)
         return redirect(url_for('course_list'))
 
     if request.method == 'POST':
@@ -127,7 +126,99 @@ def coordinator_panel():
         available_courses = Course.query.filter_by(department_code=current_user.department_code).all()
         print(current_user.department_code)
         return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
+
+
+##
+# Admin excel file upload for database
+@app.route('/admin_excel_upload', methods=['GET', 'POST'])
+@login_required
+def admin_excel_upload():
+    if current_user.userType != 'Admin':
+        flash('Access denied.', 'error')
+        return redirect(url_for('dashboard'))
     
+    # POST method
+    if request.method == 'POST':
+
+        # Check if the POST request has the file part
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        dep_code = request.form['department_code']
+        dep = Department(department_code=dep_code)
+        db.session.add(dep)
+        db.session.commit()
+        
+        # If the user does not select a file, the browser submits an empty file without a filename
+        if file.filename == '':
+            return 'No selected file'
+        
+        if file:
+            # Read the Excel file
+            excel_file = pd.ExcelFile(file)
+            
+            # Iterate over each sheet in the Excel file
+        for sheet_name in excel_file.sheet_names:
+            # Read data from the current sheet
+            excel_data = pd.read_excel(excel_file, sheet_name)
+        
+            # Iterate over each row in the DataFrame
+            if sheet_name == 'Student Outcomes':
+                for index, row in excel_data.iterrows():
+                    id = row['ID']
+                    description = row['Description']
+                    
+                    # Create a new StudentOutcome 
+                    student_outcome = StudentOutcome(id=id, department_code=dep_code,description=description)
+                    
+                    # Add the object to the session 
+                    db.session.add(student_outcome)
+                db.session.commit()
+                    
+
+            elif sheet_name == 'Performance Indicators':
+                for index, row in excel_data.iterrows():
+                    id = row['ID']
+                    description = row['Description']
+                    std_outcomes = row['Student Outcomes'] # studentoutcome_performanceindicator
+                    course_list = row['Evaluated in Courses']
+
+                    # Creating performance indicator
+                    perf_indicator = PerformanceIndicator(id=id[1:],description=description[1:])
+                    db.session.add(perf_indicator)
+
+                    individual_std_outcomes = [part.strip() for part in std_outcomes.split(',')]
+                    # Filling studentoutcome_performanceindicator table
+                    for std_outcome in individual_std_outcomes:
+                        stmt = studentoutcome_performanceindicator.insert().values(
+                            student_outcome_id=std_outcome,
+                            performance_indicator_id=perf_indicator.id
+                        )
+                        db.session.execute(stmt)
+
+                    individual_courses = [part.strip()[-3:] for part in course_list.split(',')]
+                    for c in individual_courses:
+                        cccourse = Course.query.filter_by(course_code=c).first()
+                        if not cccourse:
+                            course = Course(course_code=c, department_code=dep_code)
+                            db.session.add(course)
+
+                        existing_relationship = CoursePerformanceIndicator.query.filter_by(
+                            course_code=c,
+                            performance_indicator_id=perf_indicator.id
+                            ).first()
+                        if not existing_relationship:
+                            relationship = CoursePerformanceIndicator(course_code=c, performance_indicator_id=perf_indicator.id)
+                            db.session.add(relationship)
+                    
+                db.session.commit()
+                        
+            
+    # GET method
+    return render_template('adminexcel.html')
+
+##
 
 @app.route('/addcourseinstance', methods=['GET', 'POST'])
 @login_required
