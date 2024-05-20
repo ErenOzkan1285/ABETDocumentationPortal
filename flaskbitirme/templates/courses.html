@@ -4,42 +4,55 @@
 {% block title %}Courses{% endblock %}
 
 {% block content %}
-    <p id="instructor-name">Welcome, {{ instructor_name }}!</p>
+<p id="instructor-name">Welcome, {{ instructor_name }}!</p>
 
-    <div class="courses">
-        <ul class="course-list" id="course-list"></ul>
-    </div>
+<div class="courses">
+    <ul class="course-list" id="course-list"></ul>
+</div>
 
-    <script type="text/javascript">
-        const year = 2023;
-        const semester = 'S';
+<script type="text/javascript">
 
-        const url = `/api/instructor/courses?year=${year}&semester=${semester}`;
+    async function getYearandSemester(){
+        let response = await fetch('/api/latest_semester_year');
+        response = await response.json();
+        return response;
+    }
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                // Handle the response data
-                document.getElementById('instructor-name').innerText = 'Welcome, ' + data.instructor_name + '!';
+    async function fetchData() {
+        try {
+            const response = await getYearandSemester();
+            const year = response.year;
+            const semester = response.semester;
 
-                const coursesList = document.getElementById('course-list');
+            console.log(response);
 
-                // Dynamically populate course list with actual data from the server
-                data.courses_info.forEach(course_info => {
-                    const listItem = document.createElement('li');
-                    listItem.className = 'course-item';
+            const url = `/api/instructor/courses?year=${year}&semester=${semester}`;
 
-                    const link = document.createElement('a');
-                    link.href = `/upload?coursecode=${course_info.course_code}`;  // Pass course code via URL parameter
-                    link.className = 'course-link';
-                    link.textContent = course_info.course_code;
+            const data = await fetch(url).then(response => response.json());
 
-                    listItem.appendChild(link);
-                    coursesList.appendChild(listItem);
-                });
-            })
-            .catch(error => {
-                console.error(error);
+            // Handle the response data
+            document.getElementById('instructor-name').innerText = 'Welcome, ' + data.instructor_name + '!';
+
+            const coursesList = document.getElementById('course-list');
+
+            // Dynamically populate course list with actual data from the server
+            data.courses_info.forEach(course_info => {
+                const listItem = document.createElement('li');
+                listItem.className = 'course-item';
+
+                const link = document.createElement('a');
+                link.href = `/upload?coursecode=${course_info.course_code}`;  // Pass course code via URL parameter
+                link.className = 'course-link';
+                link.textContent = course_info.course_code;
+
+                listItem.appendChild(link);
+                coursesList.appendChild(listItem);
             });
-    </script>
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    fetchData();
+</script>
 {% endblock %}
