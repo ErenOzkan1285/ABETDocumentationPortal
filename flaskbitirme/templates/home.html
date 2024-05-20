@@ -1,37 +1,43 @@
 {% extends "layout.html" %}
 {% block content %}
 
-<!-- Include SweetAlert2 CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- Include SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
-<!-- Include SweetAlert2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    <!-- Include SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
 
-<div class="container">
-    <!-- File upload container -->
-    <div class="file-upload-container" id="file-upload-container">
-        <div class="text-container">
-            <img src="../static/excel.png" alt="EXCEL" width="60px" height="60px">
-            <h2>Excel File Upload</h2>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+
+    <div class="container">
+        <!-- File upload container -->
+        <div class="file-upload-container" id="file-upload-container">
+            <div class="text-container">
+                <img src="../static/excel.png" alt="EXCEL" width="60px" height="60px">
+                <h2>Excel File Upload</h2>
+            </div>
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Choose a file:</label>
+                    <input type="file" class="form-control" name="file" id="file" accept=".xlsx, .xls">
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary btn-upload">Upload</button>
+                </div>
+            </form>
+            <div class="template_popup" id="template_popup">
+                <p>Template found from last year! Do you want to use it?</p>
+                <button onclick="downloadTemplate()">Download</button>
+            </div>
         </div>
-        <form method="post" enctype="multipart/form-data">
-            <div class="form-group">
-                <label for="file">Choose a file:</label>
-                <input type="file" class="form-control" name="file" id="file" accept=".xlsx, .xls">
-            </div>
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary btn-upload">Upload</button>
-            </div>
-        </form>
-    </div>
-    <!-- Container for the processed table -->
-    <div class="result-container" id="result-container" style="overflow-y: scroll;">
-        <h2>Processed Table</h2>
-        <!-- Table to display processed data -->
-        <table class="table table-bordered" id="table-names">
-            <thead>
+        <!-- Container for the processed table -->
+        <div class="result-container" id="result-container" style="overflow-y: scroll;">
+            <h2>Processed Table</h2>
+            <!-- Table to display processed data -->
+            <table class="table table-bordered" id="table-names">
+                <thead>
                 <tr>
-                    <th scope="col" class="col-2">Table Name</th>
+                    <th scope="col" class="col-2">Assessment Item</th>
                     <th scope="col" class="col-2">Average</th>
                     <th scope="col" class="col-2">Standard Dev.</th>
                     <th scope="col" class="col-2">Weight</th>
@@ -39,504 +45,773 @@
                     <th scope="col" class="col-2">PI's</th>
                     <th scope="col" class="col-1">Select</th>
                 </tr>
-            </thead>
-            <tbody>
+                </thead>
+                <tbody>
                 <!-- Loop through table names and create table rows -->
                 {% if table_names %}
-                {% for table_name in table_names[3:] %}
-                <tr id="{{ table_name }}">
-                    <td>
-                        {{ table_name }}
-                    </td>
-                    <!-- Cells for Average, Standard Deviation, Weight, PI's, and Select -->
-                    <td id="avg-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
-                    <td id="std-dev-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
-                    <td id="weight-{{ table_name }}" class="weight-cell" style="display: table-cell;">
-                        <input type="number" step="any" class="weight-input" id="weight-input-{{ table_name }}"
-                            placeholder="Enter weight" disabled required>
-                    </td>
-                    <td id="outof-{{ table_name }}" class="outof-cell" style="display: table-cell;">
-                        <input type="number" step="any" class="outof-input" id="outof-input-{{ table_name }}"
-                            placeholder="Out of" disabled required>
-                    </td>
-                    <td id="pis-{{ table_name }}" class="pis-cell" style="display: table-cell; position: relative;">
-                        <span id="selected-pis-{{ table_name }}"></span>
-                        <button type="button" class="btn-pi bi-plus-circle" id="pi-button-{{ table_name }}" disabled
-                            data-toggle="modal" data-target="#piModal"></button>
-                    </td>
-                    <td>
-                        <label for="{{ table_name }}"></label>
-                        <input type="checkbox" class="column-checkbox" id="{{ table_name }}" name="column_checkbox"
-                            value="{{ table_name }}">
-                    </td>
-                </tr>
-                {% endfor %}
+                    {% for table_name in table_names[3:] %}
+                        <tr id="{{ table_name }}">
+                            <td>
+                                {{ table_name }}
+                            </td>
+                            <!-- Cells for Average, Standard Deviation, Weight, PI's, and Select -->
+                            <td id="avg-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
+                            <td id="std-dev-{{ table_name }}" class="avg-std-cell" style="display: table-cell;"></td>
+                            <td id="weight-{{ table_name }}" class="weight-cell" style="display: table-cell;">
+                                <input type="number" step="any" class="weight-input" id="weight-input-{{ table_name }}"
+                                       placeholder="Enter weight" disabled required>
+                            </td>
+                            <td id="outof-{{ table_name }}" class="outof-cell" style="display: table-cell;">
+                                <input type="number" step="any" class="outof-input" id="outof-input-{{ table_name }}"
+                                       placeholder="Out of" disabled required>
+                            </td>
+                            <td id="pis-{{ table_name }}" class="pis-cell"
+                                style="display: table-cell; position: relative;">
+                                <span id="selected-pis-{{ table_name }}"></span>
+                                <button type="button" class="btn-pi bi-plus-circle" id="pi-button-{{ table_name }}"
+                                        disabled
+                                        data-toggle="modal" data-target="#piModal"></button>
+                            </td>
+                            <td>
+                                <label for="{{ table_name }}"></label>
+                                <input type="checkbox" class="column-checkbox" id="{{ table_name }}"
+                                       name="column_checkbox"
+                                       value="{{ table_name }}">
+                            </td>
+                        </tr>
+                    {% endfor %}
                 {% endif %}
-            </tbody>
-        </table>
+                </tbody>
+            </table>
 
-        <!-- Buttons for reuploading and generating files -->
-        <div class="d-flex justify-content-between">
-            <button type="submit" id="reupload-bttn" class="btn btn-back btn-lg">Upload Another File
-            </button>
-            <button type="submit" id="generate-bttn" class="btn btn-result btn-lg">Next
-            </button>
+            <!-- Buttons for reuploading and generating files -->
+            <div class="d-flex justify-content-between">
+                <button type="submit" id="reupload-bttn" class="btn btn-back btn-lg">Upload Another File
+                </button>
+                <button type="submit" id="generate-bttn" class="btn btn-result btn-lg">Next
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<script type="text/javascript">
-    var checkboxDataDictionary = {};
+    <script type="text/javascript">
+        var checkboxDataDictionary = {};
 
-    // Function to fetch data, calculate avg and stdDev, and store in the dictionary
-    function fetchDataAndCalculate(checkbox) {
-        fetch('/api/excel')
-            .then(response => response.json())
-            .then(data => {
-                data = JSON.parse(data);
-                console.log(data)
+        // Function to fetch data, calculate avg and stdDev, and store in the dictionary
+        function fetchDataAndCalculate(checkbox) {
+            fetch('/api/excel')
+                .then(response => response.json())
+                .then(data => {
+                    data = JSON.parse(data);
+                    console.log(data)
 
-                var total = 0;
-                var squaredDifferencesSum = 0;
+                    var total = 0;
+                    var squaredDifferencesSum = 0;
 
-                data.forEach(function (student) {
-                    var value = student[checkbox.value];
-                    total += value;
-                });
-
-                const avg = (total / data.length).toFixed(2);
-
-                data.forEach(function (student) {
-                    var value = student[checkbox.value];
-                    squaredDifferencesSum += Math.pow(value - avg, 2);
-                });
-
-                const stdDev = Math.sqrt(squaredDifferencesSum / data.length).toFixed(2);
-
-                checkboxDataDictionary[checkbox.value] = {
-                    avg: checkbox.checked ? avg : '',
-                    stdDev: checkbox.checked ? stdDev : ''
-                };
-
-                var avgCell = document.getElementById('avg-' + checkbox.value);
-                var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
-                var weightCell = document.getElementById('weight-' + checkbox.value);
-                var weightInput = document.getElementById('weight-input-' + checkbox.value);
-                var outofCell = document.getElementById('outof-' + checkbox.value);
-                var outofInput = document.getElementById('outof-input-' + checkbox.value);
-                var piButton = document.getElementById('pi-button-' + checkbox.value);
-                piButton.disabled = !checkbox.checked;
-
-                avgCell.textContent = checkbox.checked ? avg : '';
-                stdDevCell.textContent = checkbox.checked ? stdDev : '';
-
-                weightCell.style.display = 'table-cell';
-                weightInput.disabled = !checkbox.checked;
-
-                outofCell.style.display = 'table-cell';
-                outofCell.disabled = !checkbox.checked;
-
-                calculateNormalizedScores(checkbox)
-                calculateNormalizedStd(checkbox)
-
-                if (!checkbox.checked) {
-                    outofInput.value = '';
-                    weightInput.value = '';
-                    var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
-                    selectedPisCell.textContent = '';
-                }
-
-                console.log(checkboxDataDictionary)
-            })
-            .catch(error => console.error('Error:', error));
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        var tableList = document.getElementById('table-names');
-        var resultContainer = document.getElementById('result-container');
-        var uploadContainer = document.getElementById('file-upload-container');
-        var checkboxList = document.querySelectorAll('.column-checkbox');
-        var hasTrItems = tableList.querySelectorAll('tbody tr').length > 0;
-
-        // Check if there are table rows, show/hide containers accordingly
-        if (hasTrItems) {
-            resultContainer.style.display = 'block';
-            uploadContainer.style.display = 'none';
-        }
-
-        // Event listener for the "Upload Another File" button
-        document.getElementById('reupload-bttn').addEventListener('click', function () {
-            resultContainer.style.display = 'none';
-            uploadContainer.style.display = 'block';
-
-            var tbody = tableList.querySelector('tbody');
-            while (tbody.firstChild) {
-                var deletedItemContent = tbody.firstChild.textContent;
-                console.log(`${deletedItemContent} deleted`);
-                tbody.removeChild(tbody.firstChild);
-            }
-            console.log('After removal:', tableList.querySelectorAll('tbody tr').length);
-        });
-
-        checkboxList.forEach(function (checkbox) {
-            checkbox.addEventListener('change', function () {
-                var weightInput = document.getElementById('weight-input-' + checkbox.value);
-                var outofInput = document.getElementById('outof-input-' + checkbox.value);
-                var piButton = document.getElementById('pi-button-' + checkbox.value);
-
-
-                weightInput.addEventListener('input', function () {
-                    if (checkbox.checked) {
-                        // Update the weight value in the dictionary whenever it changes
-                        if (!checkboxDataDictionary[checkbox.value]) {
-                            checkboxDataDictionary[checkbox.value] = {};
-                        }
-                        checkboxDataDictionary[checkbox.value].weight = weightInput.value;
-                        console.log(checkboxDataDictionary);
-                    }
-                });
-                outofInput.addEventListener('input', function () {
-                    if (checkbox.checked) {
-                        if (!checkboxDataDictionary[checkbox.value]) {
-                            checkboxDataDictionary[checkbox.value] = {};
-                        }
-                        checkboxDataDictionary[checkbox.value].outof = outofInput.value;
-                        console.log(checkboxDataDictionary);
-                        calculateNormalizedScores(checkbox)
-                    }
-                });
-                if (!checkbox.checked) {
-                    // Remove the key and its values if checkbox is unchecked
-                    delete checkboxDataDictionary[checkbox.value];
-
-                    // Clear the UI values for the unchecked checkbox
-                    var avgCell = document.getElementById('avg-' + checkbox.value);
-                    var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
-                    var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
-
-                    avgCell.textContent = '';
-                    stdDevCell.textContent = '';
-                    weightInput.value = '';
-                    outofInput.value = '';
-                    selectedPisCell.textContent = '';
-
-                    // Disable weight input and PI selection for unchecked checkbox
-                    weightInput.disabled = true;
-                    outofInput.disabled = true;
-                    piButton.disabled = true;
-                } else {
-                    // Fetch data and calculate when checkbox is checked
-                    fetchDataAndCalculate(checkbox);
-
-                    // Enable weight input and PI selection for checked checkbox
-                    outofInput.disabled = false;
-                    weightInput.disabled = false;
-                    piButton.disabled = false;
-                }
-            });
-        });
-
-
-        // Event listener for PI button click to populate the modal
-        checkboxList.forEach(function (checkbox) {
-            var piButton = document.getElementById('pi-button-' + checkbox.value);
-            piButton.addEventListener('click', async function () {
-                var checkedCheckbox = checkbox; //Storing the reference for checked checkbox
-
-                try {
-                    let response = await fetch('/api/latest_semester_year')
-                    response = await response.json();
-                    const year = response.year;
-                    const semester = response.semester;
-
-                    const urlParams = new URLSearchParams(window.location.search)
-                    const course_code = urlParams.get('coursecode')
-
-                    const url = `/api/performanceindicators?course_code=${course_code}`
-                    //Fetching PI's from database to display
-                    const fetchResponse = await fetch(url);
-                    const data = await fetchResponse.json();
-
-                    //Creating modal with PI details table
-                    var modalBody = document.getElementById('pi-table-body');
-                    modalBody.innerHTML = '';
-
-                    data.forEach(function (pi) {
-                        var row = document.createElement('tr');
-
-                        var idCell = document.createElement('td');
-                        idCell.textContent = pi.id;
-                        row.appendChild(idCell);
-
-                        var descCell = document.createElement('td');
-                        descCell.textContent = pi.description;
-                        row.appendChild(descCell);
-
-                        var checkboxCell = document.createElement('td');
-                        var checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.value = pi.id;
-                        checkbox.id = 'modal-pi-' + checkedCheckbox.value + '-' + pi.id;
-                        checkboxCell.appendChild(checkbox);
-                        row.appendChild(checkboxCell);
-
-                        modalBody.appendChild(row);
+                    data.forEach(function (student) {
+                        var value = student[checkbox.value];
+                        total += value;
                     });
 
-                    //Event listener for Save button in the modal
-                    document.getElementById('savePiButton').addEventListener('click', function () {
-                        // Get selected PI's using the checked checkbox
-                        var selectedPis = [];
-                        data.forEach(function (pi) {
-                            var checkbox = document.getElementById('modal-pi-' + checkedCheckbox.value + '-' + pi.id);
-                            if (checkbox.checked) {
-                                selectedPis.push(pi);
-                            }
-                        });
+                    const avg = (total / data.length).toFixed(2);
 
+                    data.forEach(function (student) {
+                        var value = student[checkbox.value];
+                        squaredDifferencesSum += Math.pow(value - avg, 2);
+                    });
+
+                    const stdDev = Math.sqrt(squaredDifferencesSum / data.length).toFixed(2);
+
+                    checkboxDataDictionary[checkbox.value] = {
+                        avg: checkbox.checked ? avg : '',
+                        stdDev: checkbox.checked ? stdDev : ''
+                    };
+
+                    var avgCell = document.getElementById('avg-' + checkbox.value);
+                    var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
+                    var weightCell = document.getElementById('weight-' + checkbox.value);
+                    var weightInput = document.getElementById('weight-input-' + checkbox.value);
+                    var outofCell = document.getElementById('outof-' + checkbox.value);
+                    var outofInput = document.getElementById('outof-input-' + checkbox.value);
+                    var piButton = document.getElementById('pi-button-' + checkbox.value);
+                    piButton.disabled = !checkbox.checked;
+
+                    avgCell.textContent = checkbox.checked ? avg : '';
+                    stdDevCell.textContent = checkbox.checked ? stdDev : '';
+
+                    weightCell.style.display = 'table-cell';
+                    weightInput.disabled = !checkbox.checked;
+
+                    outofCell.style.display = 'table-cell';
+                    outofCell.disabled = !checkbox.checked;
+
+                    calculateNormalizedScores(checkbox)
+                    calculateNormalizedStd(checkbox)
+
+                    if (!checkbox.checked) {
+                        outofInput.value = '';
+                        weightInput.value = '';
+                        var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
+                        selectedPisCell.textContent = '';
+                    }
+
+                    console.log(checkboxDataDictionary)
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        document.addEventListener('DOMContentLoaded', async function () {
+
+            checkForAssessmentItems();
+
+            var tableList = document.getElementById('table-names');
+            var resultContainer = document.getElementById('result-container');
+            var uploadContainer = document.getElementById('file-upload-container');
+            var checkboxList = document.querySelectorAll('.column-checkbox');
+            var hasTrItems = tableList.querySelectorAll('tbody tr').length > 0;
+
+            // Check if there are table rows, show/hide containers accordingly
+            if (hasTrItems) {
+                resultContainer.style.display = 'block';
+                uploadContainer.style.display = 'none';
+
+                showTemplateMessage();
+            }
+
+            // Event listener for the "Upload Another File" button
+            document.getElementById('reupload-bttn').addEventListener('click', function () {
+                resultContainer.style.display = 'none';
+                uploadContainer.style.display = 'block';
+
+                var tbody = tableList.querySelector('tbody');
+                while (tbody.firstChild) {
+                    var deletedItemContent = tbody.firstChild.textContent;
+                    console.log(`${deletedItemContent} deleted`);
+                    tbody.removeChild(tbody.firstChild);
+                }
+                console.log('After removal:', tableList.querySelectorAll('tbody tr').length);
+            });
+
+            checkboxList.forEach(function (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    var weightInput = document.getElementById('weight-input-' + checkbox.value);
+                    var outofInput = document.getElementById('outof-input-' + checkbox.value);
+                    var piButton = document.getElementById('pi-button-' + checkbox.value);
+
+
+                    weightInput.addEventListener('input', function () {
+                        if (checkbox.checked) {
+                            // Update the weight value in the dictionary whenever it changes
+                            if (!checkboxDataDictionary[checkbox.value]) {
+                                checkboxDataDictionary[checkbox.value] = {};
+                            }
+                            checkboxDataDictionary[checkbox.value].weight = weightInput.value;
+                            console.log(checkboxDataDictionary);
+                        }
+                    });
+                    outofInput.addEventListener('input', function () {
                         if (checkbox.checked) {
                             if (!checkboxDataDictionary[checkbox.value]) {
                                 checkboxDataDictionary[checkbox.value] = {};
                             }
-                            checkboxDataDictionary[checkbox.value].selectedPis = selectedPis;
+                            checkboxDataDictionary[checkbox.value].outof = outofInput.value;
                             console.log(checkboxDataDictionary);
+                            calculateNormalizedScores(checkbox)
                         }
-                        // Update the selected PI's in the checked checkbox cell
-                        var selectedPisCell = document.getElementById('selected-pis-' + checkedCheckbox.value);
-                        selectedPisCell.textContent = selectedPis.map(pi => pi.id).join(', ');
-
-                        $('#piModal').modal('hide');
                     });
-                } catch (error) {
-                    console.error('Error:', error);
-                }
+                    if (!checkbox.checked) {
+                        // Remove the key and its values if checkbox is unchecked
+                        delete checkboxDataDictionary[checkbox.value];
+
+                        // Clear the UI values for the unchecked checkbox
+                        var avgCell = document.getElementById('avg-' + checkbox.value);
+                        var stdDevCell = document.getElementById('std-dev-' + checkbox.value);
+                        var selectedPisCell = document.getElementById('selected-pis-' + checkbox.value);
+
+                        avgCell.textContent = '';
+                        stdDevCell.textContent = '';
+                        weightInput.value = '';
+                        outofInput.value = '';
+                        selectedPisCell.textContent = '';
+
+                        // Disable weight input and PI selection for unchecked checkbox
+                        weightInput.disabled = true;
+                        outofInput.disabled = true;
+                        piButton.disabled = true;
+                    } else {
+                        // Fetch data and calculate when checkbox is checked
+                        fetchDataAndCalculate(checkbox);
+
+                        // Enable weight input and PI selection for checked checkbox
+                        outofInput.disabled = false;
+                        weightInput.disabled = false;
+                        piButton.disabled = false;
+                    }
+                });
+            });
+
+
+            // Event listener for PI button click to populate the modal
+            checkboxList.forEach(function (checkbox) {
+                var piButton = document.getElementById('pi-button-' + checkbox.value);
+                piButton.addEventListener('click', async function () {
+                    var checkedCheckbox = checkbox; //Storing the reference for checked checkbox
+
+                    try {
+                        let response = await fetch('/api/latest_semester_year')
+                        response = await response.json();
+                        const year = response.year;
+                        const semester = response.semester;
+
+                        const urlParams = new URLSearchParams(window.location.search)
+                        const course_code = urlParams.get('coursecode')
+
+                        const url = `/api/performanceindicators?course_code=${course_code}`
+                        //Fetching PI's from database to display
+                        const fetchResponse = await fetch(url);
+                        const data = await fetchResponse.json();
+
+                        //Creating modal with PI details table
+                        var modalBody = document.getElementById('pi-table-body');
+                        modalBody.innerHTML = '';
+
+                        data.forEach(function (pi) {
+                            var row = document.createElement('tr');
+
+                            var idCell = document.createElement('td');
+                            idCell.textContent = pi.id;
+                            row.appendChild(idCell);
+
+                            var descCell = document.createElement('td');
+                            descCell.textContent = pi.description;
+                            row.appendChild(descCell);
+
+                            var checkboxCell = document.createElement('td');
+                            var checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.value = pi.id;
+                            checkbox.id = 'modal-pi-' + checkedCheckbox.value + '-' + pi.id;
+                            checkboxCell.appendChild(checkbox);
+                            row.appendChild(checkboxCell);
+
+                            modalBody.appendChild(row);
+                        });
+
+                        //Event listener for Save button in the modal
+                        document.getElementById('savePiButton').addEventListener('click', function () {
+                            // Get selected PI's using the checked checkbox
+                            var selectedPis = [];
+                            data.forEach(function (pi) {
+                                var checkbox = document.getElementById('modal-pi-' + checkedCheckbox.value + '-' + pi.id);
+                                if (checkbox.checked) {
+                                    selectedPis.push(pi);
+                                }
+                            });
+
+                            if (checkbox.checked) {
+                                if (!checkboxDataDictionary[checkbox.value]) {
+                                    checkboxDataDictionary[checkbox.value] = {};
+                                }
+                                checkboxDataDictionary[checkbox.value].selectedPis = selectedPis;
+                                console.log(checkboxDataDictionary);
+                            }
+                            // Update the selected PI's in the checked checkbox cell
+                            var selectedPisCell = document.getElementById('selected-pis-' + checkedCheckbox.value);
+                            selectedPisCell.textContent = selectedPis.map(pi => pi.id).join(', ');
+
+                            $('#piModal').modal('hide');
+                        });
+                    } catch (error) {
+                        console.error('Error:', error);
+                    }
+                });
             });
         });
-    });
 
-    //Calculating Normalized Scores
-    function calculateNormalizedScores(checkbox) {
-        const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
-        const outof = parseFloat(checkboxDataDictionary[checkbox.value].outof);
+        //Calculating Normalized Scores
+        function calculateNormalizedScores(checkbox) {
+            const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
+            const outof = parseFloat(checkboxDataDictionary[checkbox.value].outof);
 
-        if (!isNaN(avg) && !isNaN(outof) && outof !== 0) {
-            const normalizedScore = (avg / outof).toFixed(2);
-            console.log('Normalized Score:', normalizedScore);
+            if (!isNaN(avg) && !isNaN(outof) && outof !== 0) {
+                const normalizedScore = (avg / outof).toFixed(2);
+                console.log('Normalized Score:', normalizedScore);
 
-            // You can store or display the normalized score as needed
-            checkboxDataDictionary[checkbox.value].normalizedScore = normalizedScore;
-        } else {
-            console.error('Invalid values for normalization:', avg, outof);
+                // You can store or display the normalized score as needed
+                checkboxDataDictionary[checkbox.value].normalizedScore = normalizedScore;
+            } else {
+                console.error('Invalid values for normalization:', avg, outof);
+            }
         }
-    }
 
-    //Calculating Normalized Standard Deviations
-    function calculateNormalizedStd(checkbox) {
-        const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
-        const std = parseFloat(checkboxDataDictionary[checkbox.value].stdDev);
+        //Calculating Normalized Standard Deviations
+        function calculateNormalizedStd(checkbox) {
+            const avg = parseFloat(checkboxDataDictionary[checkbox.value].avg);
+            const std = parseFloat(checkboxDataDictionary[checkbox.value].stdDev);
 
-        if (!isNaN(avg) && !isNaN(std) && std !== 0) {
-            const normalizedStd = (std / avg).toFixed(2);
-            console.log('Normalized StdDev:', normalizedStd);
+            if (!isNaN(avg) && !isNaN(std) && std !== 0) {
+                const normalizedStd = (std / avg).toFixed(2);
+                console.log('Normalized StdDev:', normalizedStd);
 
-            checkboxDataDictionary[checkbox.value].normalizedStd = normalizedStd;
-        } else {
-            console.error('Invalid values for normalization:', avg, std);
+                checkboxDataDictionary[checkbox.value].normalizedStd = normalizedStd;
+            } else {
+                console.error('Invalid values for normalization:', avg, std);
+            }
         }
-    }
 
-    function bubbleSort(arr, l, r) {
-        var lngMin = l;
-        var lngMax = r;
+        function bubbleSort(arr, l, r) {
+            var lngMin = l;
+            var lngMax = r;
 
-        for (var i = lngMin; i < lngMax - 1; i++) {
-            for (var j = i + 1; j < lngMax; j++) {
-                if (arr[i] > arr[j]) {
-                    // Swap values in arr
-                    var temp = arr[i];
-                    arr[i] = arr[j];
-                    arr[j] = temp;
+            for (var i = lngMin; i < lngMax - 1; i++) {
+                for (var j = i + 1; j < lngMax; j++) {
+                    if (arr[i] > arr[j]) {
+                        // Swap values in arr
+                        var temp = arr[i];
+                        arr[i] = arr[j];
+                        arr[j] = temp;
 
+                    }
                 }
             }
         }
-    }
 
-    function calculatePIWeight() {
-        return new Promise((resolve, reject) => {
-            fetch('/api/performanceindicators')
-                .then(response => response.json())
-                .then(piData => {
-                    var piAverageSuccess = {};
-                    var piStdSuccess = {};
-                    var piWeightSuccess = {};
+        function calculatePIWeight() {
+            return new Promise((resolve, reject) => {
+                fetch('/api/performanceindicators')
+                    .then(response => response.json())
+                    .then(piData => {
+                        var piAverageSuccess = {};
+                        var piStdSuccess = {};
+                        var piWeightSuccess = {};
 
-                    piData.forEach(function (pi) {
-                        var piWeights = {};
-                        var result_count = 0
-                        var result_Array = []
-                        var std_Array = []
-                        var piId = pi.id;
+                        piData.forEach(function (pi) {
+                            var piWeights = {};
+                            var result_count = 0
+                            var result_Array = []
+                            var std_Array = []
+                            var piId = pi.id;
 
-                        for (var checkboxValue in checkboxDataDictionary) {
-                            var checkboxData = checkboxDataDictionary[checkboxValue];
-                            var selectedPis = checkboxData.selectedPis;
-                            var weight = parseFloat(checkboxData.weight);
-                            var normalizedScore = parseFloat(checkboxData.normalizedScore)
-                            var normalizedStd = parseFloat(checkboxData.normalizedStd)
+                            for (var checkboxValue in checkboxDataDictionary) {
+                                var checkboxData = checkboxDataDictionary[checkboxValue];
+                                var selectedPis = checkboxData.selectedPis;
+                                var weight = parseFloat(checkboxData.weight);
+                                var normalizedScore = parseFloat(checkboxData.normalizedScore)
+                                var normalizedStd = parseFloat(checkboxData.normalizedStd)
 
-                            const isPiIdIncluded = selectedPis.some(pi => pi.id === piId);
-                            if (selectedPis && weight && isPiIdIncluded) {
-                                if (!piWeights[piId]) {
-                                    piWeights[piId] = 0;
+                                const isPiIdIncluded = selectedPis.some(pi => pi.id === piId);
+                                if (selectedPis && weight && isPiIdIncluded) {
+                                    if (!piWeights[piId]) {
+                                        piWeights[piId] = 0;
+                                    }
+                                    piWeights[piId] += weight;
+
+                                    result_Array[result_count] = normalizedScore
+                                    std_Array[result_count] = normalizedStd
+                                    result_count += 1
+                                    console.log(result_Array)
+                                    console.log(std_Array)
                                 }
-                                piWeights[piId] += weight;
-
-                                result_Array[result_count] = normalizedScore
-                                std_Array[result_count] = normalizedStd
-                                result_count += 1
-                                console.log(result_Array)
-                                console.log(std_Array)
                             }
-                        }
 
-                        if (result_count > 1) {
-                            bubbleSort(result_Array, 1, result_count)
-                        }
+                            if (result_count > 1) {
+                                bubbleSort(result_Array, 1, result_count)
+                            }
 
-                        for (var p in piWeights) {
-                            piAverageSuccess[p] = result_Array[Math.floor(result_count / 2)];
-                            piStdSuccess[p] = std_Array[Math.floor(result_count / 2)];
-                            piWeightSuccess[p] = piWeights[p] / 2;
-                        }
+                            for (var p in piWeights) {
+                                piAverageSuccess[p] = result_Array[Math.floor(result_count / 2)];
+                                piStdSuccess[p] = std_Array[Math.floor(result_count / 2)];
+                                piWeightSuccess[p] = piWeights[p] / 2;
+                            }
 
-                        resolve({ piAverageSuccess, piStdSuccess, piWeightSuccess });
+                            resolve({piAverageSuccess, piStdSuccess, piWeightSuccess});
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching performance indicators:', error);
+                        reject(error);
                     });
-                })
-                .catch(error => {
-                    console.error('Error fetching performance indicators:', error);
-                    reject(error);
-                });
-        });
-    }
-
-    var checkboxList = document.querySelectorAll('.column-checkbox');
-
-    document.getElementById('generate-bttn').addEventListener('click', async function () {
-
-        if (checkForError()) {
-            return;
+            });
         }
 
-        var assessmentItemsData = [];
+        var checkboxList = document.querySelectorAll('.column-checkbox');
 
-        try {
-            // Fetch the latest semester and year from the backend
-            let response = await fetch('/api/latest_semester_year');
-            response = await response.json();
-            const year = response.year;
-            const semester = response.semester;
-            const urlParams = new URLSearchParams(window.location.search)
-            const course_code = urlParams.get('coursecode')
-            // Iterate through all checkboxes
-            checkboxList.forEach(function (checkbox) {
+        document.getElementById('generate-bttn').addEventListener('click', async function () {
+
+            if (checkForError()) {
+                return;
+            }
+
+            var assessmentItemsData = [];
+
+            try {
+                // Fetch the latest semester and year from the backend
+                let response = await fetch('/api/latest_semester_year');
+                response = await response.json();
+                const year = response.year;
+                const semester = response.semester;
+                const urlParams = new URLSearchParams(window.location.search)
+                const course_code = urlParams.get('coursecode')
+                // Iterate through all checkboxes
+                checkboxList.forEach(function (checkbox) {
+                    // If checkbox is checked
+                    if (checkbox.checked) {
+                        // Construct data for the assessment item
+                        var data = {
+                            course_code: course_code, // Fill this with appropriate value
+                            year: year, // Use the fetched year
+                            semester: semester, // Use the fetched semester
+                            weight: checkboxDataDictionary[checkbox.value].weight,
+                            average: checkboxDataDictionary[checkbox.value].avg,
+                            stdDev: checkboxDataDictionary[checkbox.value].stdDev,
+                            outOf: checkboxDataDictionary[checkbox.value].outof,
+                            name: checkbox.value,
+                            selectedPIs: checkboxDataDictionary[checkbox.value].selectedPis
+                        };
+                        assessmentItemsData.push(data); // Add data to the array
+                        console.log(assessmentItemsData)
+                    }
+                });
+
+                response = await fetch('/save_assessment_item_details', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({assessmentItemsData: assessmentItemsData})
+                });
+
+
+                if (!response.ok) {
+                    console.error('Failed to save assessment item details');
+                    return; // Stop further processing if saving fails
+                }
+
+                calculatePIWeight().then(piWeights => {
+                    console.log("PIHomepage:", piWeights);
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const course_code = urlParams.get('coursecode');
+
+                    const inputElement = document.createElement('input');
+                    inputElement.type = 'hidden';
+                    inputElement.name = 'piWeights';
+                    //inputElement.value = JSON.stringify(piWeights)+ ',' + '"course_code:"'+ course_code
+
+                    inputElement.value = JSON.stringify(piWeights);
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = '/process?coursecode=' + course_code;
+
+                    form.appendChild(inputElement);
+                    console.log(inputElement)
+                    document.body.appendChild(form);
+                    form.submit();
+                    // Redirect to process.html with query parameters
+                    //window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
+                    // You can use piWeights or perform further operations with it
+                }).catch(error => {
+                    // Handle error if needed
+                    console.error('Error calculating PI weights:', error);
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+            }
+
+
+        });
+
+        function checkForError() {
+            // Iterate through all checkboxes to check if any lacks selected performance indicators
+            for (var checkbox of checkboxList) {
                 // If checkbox is checked
                 if (checkbox.checked) {
-                    // Construct data for the assessment item
-                    var data = {
-                        course_code: course_code, // Fill this with appropriate value
-                        year: year, // Use the fetched year
-                        semester: semester, // Use the fetched semester
-                        weight: checkboxDataDictionary[checkbox.value].weight,
-                        average: checkboxDataDictionary[checkbox.value].avg,
-                        stdDev: checkboxDataDictionary[checkbox.value].stdDev,
-                        outOf: checkboxDataDictionary[checkbox.value].outof,
-                        name: checkbox.value,
-                        selectedPIs: checkboxDataDictionary[checkbox.value].selectedPis
-                    };
-                    assessmentItemsData.push(data); // Add data to the array
-                    console.log(assessmentItemsData)
+                    // Check if there are no selected performance indicators or if it's an empty array
+                    if (!checkboxDataDictionary[checkbox.value].selectedPis || checkboxDataDictionary[checkbox.value].selectedPis.length === 0) {
+                        // Show a pop-up message indicating that all necessary fields for the assessment item should be entered
+                        showPopUpMessage('Please select performance indicators for all assessment items before proceeding.');
+                        return true; // Return true to stop further processing
+                    }
+                    // Check if weight or outOf values are empty or undefined
+                    if (!checkboxDataDictionary[checkbox.value].weight || !checkboxDataDictionary[checkbox.value].outof) {
+                        // Show a pop-up message indicating that all necessary fields for the assessment item should be entered
+                        showPopUpMessage('Please enter all necessary fields for assessment item.');
+                        return true; // Return true to stop further processing
+                    }
+                }
+            }
+            return false; // Return false if all assessment items with checked checkboxes have selected performance indicators and non-empty weight/outOf values
+        }
+
+        function checkForAssessmentItems() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const course_code = urlParams.get('coursecode'); // Extract coursecode parameter from URL
+            const templatePopUp = document.getElementById("template_popup");
+            if (course_code) {
+                fetch(`/api/course/${course_code}/latest-assessment-items`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.assessment_items.length > 0) {
+                            templatePopUp.style.display = 'flex';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching assessment items:', error);
+                    });
+            } else {
+                console.error('Course code parameter "coursecode" not found in URL');
+            }
+        }
+
+
+        function showPopUpMessage(message) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: message,
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK'
+            });
+        }
+
+        function showTemplateMessage() {
+            Swal.fire({
+                icon: 'question',
+                title: "Do you want to use last year's template?",
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetchAndCompareAssessmentItems();
+                } else if (result.dismiss === Swal.DismissReason.cancel) {
+                    console.log('Template usage cancelled');
                 }
             });
-
-            response = await fetch('/save_assessment_item_details', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ assessmentItemsData: assessmentItemsData })
-            });
+        }
 
 
-            if (!response.ok) {
-                console.error('Failed to save assessment item details');
-                return; // Stop further processing if saving fails
+        function downloadTemplate() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const course_code = urlParams.get('coursecode'); // Extract coursecode parameter from URL
+
+                fetch(`/api/course/${course_code}/latest-assessment-items`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const assessmentItems = data.assessment_items;
+
+                        const workbook = XLSX.utils.book_new();
+                        const worksheet = XLSX.utils.aoa_to_sheet([]);
+
+                        // Define headers for the first three columns
+                        const headers = ["ID Number", "First Name", "Last Name"];
+
+                        // Add headers to the first three columns (columns A, B, C)
+                        headers.forEach((header, index) => {
+                            const cellAddress = XLSX.utils.encode_cell({r: 0, c: index});
+                            XLSX.utils.sheet_add_aoa(worksheet, [[header]], {origin: cellAddress});
+                        });
+
+                        // Loop through assessment items and add their names starting from column D
+                        assessmentItems.forEach((item, index) => {
+                            const assessmentName = item.name;
+                            const columnIndex = index + 3; // Start placing assessment names from column D onwards
+
+                            const cellAddress = XLSX.utils.encode_cell({r: 0, c: columnIndex});
+                            XLSX.utils.sheet_add_aoa(worksheet, [[assessmentName]], {origin: cellAddress});
+                        });
+
+                        XLSX.utils.book_append_sheet(workbook, worksheet, 'Assessment Names');
+
+                        // Generate and download the Excel file
+                        const today = new Date();
+                        const fileName = `template_${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.xlsx`;
+                        XLSX.writeFile(workbook, fileName);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Download Complete',
+                            text: 'Assessment names have been downloaded successfully.',
+                            confirmButtonColor: '#3085d6',
+                            confirmButtonText: 'OK'
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching assessment items:', error);
+                        showPopUpMessage('Failed to fetch assessment items.');
+                    });
+            } catch (error) {
+                console.error('Error generating Excel file:', error);
+                showPopUpMessage('Failed to generate Excel file.');
+            }
+        }
+
+
+        function transposeWorksheet(sheet) {
+            const transposedSheet = {};
+            const range = XLSX.utils.decode_range(sheet['!ref']);
+
+            for (let R = range.s.r; R <= range.e.r; ++R) {
+                for (let C = range.s.c; C <= range.e.c; ++C) {
+                    const cellAddress = XLSX.utils.encode_cell({r: R, c: C});
+                    const cell = sheet[cellAddress];
+
+                    const transposedCellAddress = XLSX.utils.encode_cell({r: C, c: R});
+                    transposedSheet[transposedCellAddress] = {v: cell.v};
+                }
             }
 
-            calculatePIWeight().then(piWeights => {
-                console.log("PIHomepage:", piWeights);
+            // Set the new range for the transposed sheet
+            transposedSheet['!ref'] = XLSX.utils.encode_range({
+                s: {r: range.s.c, c: range.s.r},
+                e: {r: range.e.c, c: range.e.r}
+            });
+
+            return transposedSheet;
+        }
+
+        async function fetchAndCompareAssessmentItems() {
+            try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const course_code = urlParams.get('coursecode');
 
-                const inputElement = document.createElement('input');
-                inputElement.type = 'hidden';
-                inputElement.name = 'piWeights';
-                //inputElement.value = JSON.stringify(piWeights)+ ',' + '"course_code:"'+ course_code 
+                // Fetch uploaded assessment items
+                const uploadedAssessmentItems = Array.from(document.querySelectorAll('#table-names tbody tr'))
+                    .map(row => row.id);
 
-                inputElement.value = JSON.stringify(piWeights);
-                const form = document.createElement('form');
-                form.method = 'post';
-                form.action = '/process?coursecode=' + course_code;
-
-                form.appendChild(inputElement);
-                console.log(inputElement)
-                document.body.appendChild(form);
-                form.submit();
-                // Redirect to process.html with query parameters
-                //window.location.href = `/process?coursecode=${course_code}&${queryParams.toString()}`;
-                // You can use piWeights or perform further operations with it
-            }).catch(error => {
-                // Handle error if needed
-                console.error('Error calculating PI weights:', error);
-            });
-
-        } catch (error) {
-            console.error('Error:', error);
-        }
-
-
-    });
-
-    function checkForError() {
-        // Iterate through all checkboxes to check if any lacks selected performance indicators
-        for (var checkbox of checkboxList) {
-            // If checkbox is checked
-            if (checkbox.checked) {
-                // Check if there are no selected performance indicators or if it's an empty array
-                if (!checkboxDataDictionary[checkbox.value].selectedPis || checkboxDataDictionary[checkbox.value].selectedPis.length === 0) {
-                    // Show a pop-up message indicating that all necessary fields for the assessment item should be entered
-                    showPopUpMessage('Please select performance indicators for all assessment items before proceeding.');
-                    return true; // Return true to stop further processing
+                // Fetch previous year's assessment items for the same course
+                const response = await fetch(`/api/course/${course_code}/latest-assessment-items`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch previous year assessment items');
                 }
-                // Check if weight or outOf values are empty or undefined
-                if (!checkboxDataDictionary[checkbox.value].weight || !checkboxDataDictionary[checkbox.value].outof) {
-                    // Show a pop-up message indicating that all necessary fields for the assessment item should be entered
-                    showPopUpMessage('Please enter all necessary fields for assessment item.');
-                    return true; // Return true to stop further processing
+
+                const responseData = await response.json();
+                const previousYearAssessmentItems = responseData.assessment_items;
+
+                // Check if previousYearAssessmentItems is an array of assessment items
+                if (!Array.isArray(previousYearAssessmentItems) || !previousYearAssessmentItems.length) {
+                    throw new Error('Previous year assessment items not found or invalid format');
                 }
+
+                // Compare uploaded assessment items with previous year's items
+                for (const uploadedItem of uploadedAssessmentItems) {
+                    const matchingItem = previousYearAssessmentItems.find(item => item.name === uploadedItem);
+                    if (matchingItem) {
+                        console.log('Matching Item:', matchingItem);
+
+                        // Check the corresponding checkbox in the UI
+                        const row = document.getElementById(uploadedItem);
+                        const checkbox = row.querySelector('.column-checkbox');
+                        if (checkbox) {
+                            checkbox.checked = true;
+                            checkbox.dispatchEvent(new Event('change', {bubbles: true}));
+                            await addSelectedPisFromTemplate();
+                        }
+                    } else {
+                        console.warn('No matching item found for:', uploadedItem);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching and comparing assessment items:', error);
             }
         }
-        return false; // Return false if all assessment items with checked checkboxes have selected performance indicators and non-empty weight/outOf values
-    }
 
-    function showPopUpMessage(message) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Oops...',
-            text: message,
-            confirmButtonColor: '#3085d6',
-            confirmButtonText: 'OK'
-        });
-    }
-</script>
+        async function addSelectedPisFromTemplate() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const course_code = urlParams.get('coursecode');
+
+                // Fetch uploaded assessment items
+                const uploadedAssessmentItems = Array.from(document.querySelectorAll('#table-names tbody tr'))
+                    .map(row => row.id);
+
+                // Fetch previous year's assessment items for the same course
+                const response = await fetch(`/api/course/${course_code}/latest-assessment-items`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch previous year assessment items');
+                }
+
+                const responseData = await response.json();
+                const previousYearAssessmentItems = responseData.assessment_items;
+
+                // Check if previousYearAssessmentItems is an array of assessment items
+                if (!Array.isArray(previousYearAssessmentItems) || !previousYearAssessmentItems.length) {
+                    throw new Error('Previous year assessment items not found or invalid format');
+                }
+
+                // Compare uploaded assessment items with previous year's items
+                for (const uploadedItem of uploadedAssessmentItems) {
+                    const matchingItem = previousYearAssessmentItems.find(item => item.name === uploadedItem);
+                    if (matchingItem) {
+                        console.log('Matching Item:', matchingItem);
+
+                        // Check the corresponding checkbox in the UI
+                        const row = document.getElementById(uploadedItem);
+                        const checkbox = row.querySelector('.column-checkbox');
+                        if (checkbox) {
+                            var selectedPiCell = document.getElementById('selected-pis-' + uploadedItem);
+                            selectedPiCell.textContent = matchingItem.selectedPIs;
+
+                            const selectedPis = matchingItem.selectedPIs.split(',').map(pi => pi.trim());
+                            // Map selectedPis to the desired format (id and description)
+                            const selectedPisToDict = selectedPis.map(piId => ({
+                                id: piId,
+                                description: '',
+                            }));
+
+                            const outOfInput = document.getElementById('outof-input-' + uploadedItem);
+                            const weightInput = document.getElementById('weight-input-' + uploadedItem);
+
+                            if (outOfInput) {
+                                outOfInput.value = matchingItem.outOf; // Set outOf as string
+                                calculateNormalizedScoresForTemplate(uploadedItem);
+                            }
+                            if (weightInput) {
+                                weightInput.value = matchingItem.weight; // Set weight as string
+                            }
+
+                            checkboxDataDictionary[uploadedItem] = {
+                                ...checkboxDataDictionary[uploadedItem],
+                                selectedPis: selectedPisToDict,
+                                outof: matchingItem.outOf,
+                                weight: matchingItem.weight
+                            };
+
+                            console.log('Selected PIs:', selectedPisToDict);
+                            console.log('Updated Data Dictionary:', checkboxDataDictionary);
+                        }
+                    } else {
+                        console.warn('No matching item found for:', uploadedItem);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching and comparing assessment items:', error);
+            }
+        }
+
+        function calculateNormalizedScoresForTemplate(uploadedItem) {
+            const avg = parseFloat(checkboxDataDictionary[uploadedItem].avg);
+            const outof = parseFloat(checkboxDataDictionary[uploadedItem].outof);
+
+            if (!isNaN(avg) && !isNaN(outof) && outof !== 0) {
+                const normalizedScore = (avg / outof).toFixed(2);
+                console.log('Normalized Score:', normalizedScore);
+
+                // You can store or display the normalized score as needed
+                checkboxDataDictionary[uploadedItem].normalizedScore = normalizedScore;
+            } else {
+                console.error('Invalid values for normalization:', avg, outof);
+            }
+        }
+
+
+    </script>
 {% endblock %}

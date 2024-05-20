@@ -1070,6 +1070,38 @@ def save_assessment_item_details():
     
     # Redirect to the dashboard or any other appropriate page
     return render_template('dashboard.html')
+
+@app.route('/api/course/<string:course_code>/latest-assessment-items', methods=['GET'])
+def get_latest_course_assessment_items(course_code):
+    latest_course_instance = db.session.query(CourseInstance).\
+        filter(CourseInstance.course_code == course_code).\
+        order_by(CourseInstance.year.desc(), CourseInstance.semester.desc()).first()
+
+    if not latest_course_instance:
+        return jsonify({'message': 'No course instance found for the specified course code'}), 404
+
+    assessment_items = db.session.query(AssessmentItem).\
+        filter(AssessmentItem.course_code == course_code).\
+        filter(AssessmentItem.year == latest_course_instance.year).\
+        filter(AssessmentItem.semester == latest_course_instance.semester).all()
+
+    assessment_items_list = []
+    for item in assessment_items:
+        assessment_items_list.append({
+            'id': item.id,
+            'course_code': item.course_code,
+            'year': item.year,
+            'semester': item.semester,
+            'selectedPIs': item.selectedPIs,
+            'name': item.name,
+            'weight': item.weight,
+            'average': item.average,
+            'stdDev': item.stdDev,
+            'outOf': item.outOf,
+            'description': item.description
+        })
+
+    return jsonify({'assessment_items': assessment_items_list}), 200
     
     
     

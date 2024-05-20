@@ -1,3 +1,11 @@
+/* Override max width for large container */
+@media (min-width: 992px) {
+    .container {
+        max-width: 1920px; /* Change this value to your desired width */
+    }
+}
+
+
 body.home {
     background-color: #f4f4f4;
 }
@@ -89,6 +97,29 @@ td {
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);;
+}
+
+.template_popup {
+    flex-direction: row;
+    /*border: 1px solid black;*/
+    align-content: center;
+    justify-content: center;
+    display: none;
+}
+
+.template_popup p {
+    font-size: 20px;
+    margin-top: 40px;
+}
+
+.template_popup button {
+    border-radius: 15px;
+    margin: 30px;
+    padding: 15px;
+    background-color: #24a97c;
+    color: white;
+    border: 1px solid white; /* Set border with white color */
+    cursor: pointer;
 }
 
 .column-checkbox {

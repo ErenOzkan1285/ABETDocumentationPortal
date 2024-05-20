@@ -13,12 +13,12 @@
             <thead>
                 <tr>
                     <th scope="col" class="col-4">Specific Outcomes of Instructions</th>
-                    <th scope="col" class="col-2">PI's</th>
-                    <th scope="col" class="col-2">Target Score</th>
-                    <th scope="col" class="col-2">Actual Score</th>
-                    <th scope="col" class="col-2">Student Score</th>
-                    <th scope="col" class="col-2">Status</th>
-                    <th scope="col" class="col-2">Instructor Notes</th>
+                    <th scope="col" class="col-1">PI's</th>
+                    <th scope="col" class="col-1">Target Score</th>
+                    <th scope="col" class="col-1">Actual Score</th>
+                    <th scope="col" class="col-1">Student Score</th>
+                    <th scope="col" class="col-1">Status</th>
+                    <th scope="col" class="col-6">Instructor Notes</th>
                 </tr>
             </thead>
             <tbody id="processed-table-body"></tbody>
@@ -243,7 +243,7 @@
                         const notesValue = notesInput ? notesInput.value.trim() : '';
                         //row.cells[6].textContent = notesValue;
                     });
-                    
+
                     // Once data is sent, trigger the download
                     $("#survey").table2excel({
                         name: "Worksheet Name",
@@ -385,12 +385,7 @@
             }
         }
 
-
-
-
         // Introduce a delay between each POST request
-
-
         document.getElementById('go-back').addEventListener('click', function () {
             window.history.back();
         });
