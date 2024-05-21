@@ -46,10 +46,10 @@
                 <li class="nav-item">
                     <a class="nav-link" id="dashboard-link" href="/dashboard">Dashboard</a>
                 </li>
+                {% if current_user.userType == 'Coordinator' %}
                 <li class="nav-item">
                     <a class="nav-link" href="/course" id="upload-link">Upload Excel file</a>
                 </li>
-                {% if current_user.userType == 'Coordinator' %}
                     <li class="nav-item">
                         <a class="nav-link" href="/coordinator_panel">Coordinator Panel</a>
                     </li>
@@ -66,6 +66,9 @@
                     </li>
                 {% endif %}
                 {% if current_user.userType == 'Instructor' %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/course" id="upload-link">Upload Excel file</a>
+                </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
