@@ -4,90 +4,99 @@
 {% block title %}Coordinator Panel{% endblock %}
 
 {% block content %}
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Title</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <style>
-            .instructor-container {
-                width: 100%;
-                display: flex;
-                margin-right: 20px;
-            }
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .instructor-container {
+            width: 100%;
+            display: flex;
+            margin-right: 20px;
+        }
 
-            .instance-container {
-                width: 100%;
-                display: flex;
-                margin-right: 20px;
-            }
+        .instance-container {
+            width: 100%;
+            display: flex;
+            margin-right: 20px;
+        }
 
-            input[type="text"],
-            select {
-                padding: 10px;
-                margin-left: 20px;
-                border-radius: 5px;
-                border: 1px solid #ccc;
-                width: 100%;
-            }
+        input[type="text"],
+        select {
+            padding: 10px;
+            margin-left: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+        }
 
-            button {
-                margin-top: 25px;
-                padding: 10px 20px;
-                border-radius: 5px;
-                border: none;
-                background-color: #00b708;
-                color: white;
-                cursor: pointer;
-                margin-left: 20px;
-            }
+        button {
+            margin-top: 25px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            background-color: #00b708;
+            color: white;
+            cursor: pointer;
+            margin-left: 20px;
+        }
 
-            label {
-                margin-left: 20px;
-            }
+        label {
+            margin-left: 20px;
+        }
 
-            h1 {
-                margin-top: 30px;
-                margin-left: 10px;
-                color: #333333;
-                font-size: 24px;
-            }
+        h1 {
+            margin-top: 30px;
+            margin-left: 10px;
+            color: #333333;
+            font-size: 24px;
+        }
 
-            input {
-                padding: 10px;
-                margin-left: 20px;
-                border-radius: 5px;
-                border: 1px solid #ccc;
-                width: 100%;
-            }
-        </style>
-    </head>
-    <body>
+        input {
+            padding: 10px;
+            margin-left: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.getElementById('add-course-form').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent form from submitting
+                alert('Course instance added successfully');
+                // Optionally, you can reset the form or handle the data here
+                // this.reset(); // Uncomment to reset the form
+            });
+        });
+    </script>
+</head>
+<body>
     <h1>Assign Instructor</h1>
     <div class="instructor-container">
-            <form action="/coordinator_panel" method="post">
-                <label for="course-instance">Select Course Instance:</label>
-                <select name="course_instance" id="course_instance">
-                    {% for course_instance in unassigned_course_instances %}
-                        <option value="{{ course_instance.course_code }}-{{ course_instance.year }}-{{ course_instance.semester }}">{{ course_instance.course_code }}
-                            - {{ course_instance.year }} - {{ course_instance.semester }}</option>
-                    {% endfor %}
-                </select>
-                <label for="instructor">Select Instructor:</label>
-                <select name="instructor" id="instructor">
-                    {% for instructor in instructors %}
-                        <option value="{{ instructor.id }}">{{ instructor.name }} {{ instructor.surname }}</option>
-                    {% endfor %}
-                </select>
-                <button type="submit">Assign Instructor</button>
-            </form>
+        <form action="/coordinator_panel" method="post">
+            <label for="course-instance">Select Course Instance:</label>
+            <select name="course_instance" id="course_instance">
+                {% for course_instance in unassigned_course_instances %}
+                    <option value="{{ course_instance.course_code }}-{{ course_instance.year }}-{{ course_instance.semester }}">{{ course_instance.course_code }} - {{ course_instance.year }} - {{ course_instance.semester }}</option>
+                {% endfor %}
+            </select>
+            <label for="instructor">Select Instructor:</label>
+            <select name="instructor" id="instructor">
+                {% for instructor in instructors %}
+                    <option value="{{ instructor.id }}">{{ instructor.name }} {{ instructor.surname }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Assign Instructor</button>
+        </form>
     </div>
     <h1>Add Course Instance</h1>
     <div class="instance-container">
         {% if error %}
             <h1>{{ error }}</h1>
         {% endif %}
-        <form action="/addcourseinstance" method="post">
+        <form id="add-course-form">
             <label for="course_code">Course Code:</label>
             <select name="course_code" id="course_code">
                 {% for course in courses %}
@@ -101,9 +110,8 @@
                 <option value="S">Spring</option>
                 <option value="F">Fall</option>
             </select><br>
-
-            <button type="submit">Add Course Instance</button>
+            <button type="submit" id="add_course_instance_button">Add Course Instance</button>
         </form>
     </div>
-    </body>
+</body>
 {% endblock %}
