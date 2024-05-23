@@ -170,10 +170,22 @@ def admin_excel_upload():
                     description = row['Description']
                     
                     # Create a new StudentOutcome 
-                    student_outcome = StudentOutcome(id=id, department_code=dep_code,description=description)
+                    student_outcome_existed = StudentOutcome.query.filter_by(id=id)
+                    if not student_outcome_existed:
+                        student_outcome = StudentOutcome(id=id, department_code=dep_code,description=description)
+                        db.session.add(student_outcome)
+
+                    existing_relationship = StudentOutcomeDepartment.query.filter_by(
+                            student_outcome_id=id,
+                            department_code=dep_code
+                            ).first()
+                    
+                    if not existing_relationship:
+                        relationship = StudentOutcomeDepartment(student_outcome_id=id, department_code=dep_code, description='!')
+                        db.session.add(relationship)
                     
                     # Add the object to the session 
-                    db.session.add(student_outcome)
+                    
                 db.session.commit()
                     
 
