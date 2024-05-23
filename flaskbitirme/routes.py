@@ -13,7 +13,7 @@ all_sheets = {}
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def home():
-    print("home func:", current_user.name)
+    #print("home func:", current_user.name)
 
     global df
     global all_sheets
