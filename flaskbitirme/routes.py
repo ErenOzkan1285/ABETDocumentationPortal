@@ -127,6 +127,42 @@ def coordinator_panel():
         print(current_user.department_code)
         return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
 
+###
+@app.route('/assigncoordinator', methods=['GET', 'POST'])
+@login_required
+def assigncoordinator():
+    if current_user.userType != 'Admin':
+        return redirect(url_for('dashboard'))
+    
+    # Post request
+    if request.method == 'POST':
+        coordinator_id = request.form['coordinator_id']
+        department_code = request.form['department_code']
+        coordinator = Coordinator.query.filter_by(id=coordinator_id).first()
+        department = Department.query.filter_by(department_code=department_code).first()
+            
+        if not coordinator:
+            flash('Coordinator not found', 'error')
+            return redirect(url_for('coordinator_panel'))
+
+        if not department:
+            flash('Department not found', 'error')
+            return redirect(url_for('coordinator_panel'))
+        
+        # Assign the coordinator to the department
+        coordinator.department_code = department_code
+        db.session.commit()
+        return redirect(url_for('assigncoordinator'))
+    
+    # GET request: fetch coordinators without a department and departments with no coordinators
+    coordinators_without_department = Coordinator.query.filter_by(department_code=None).all()
+    # Subquery to find departments with coordinators
+    departments_with_coordinators_subquery = db.session.query(Department.department_code).join(Coordinator).distinct()
+    departments_without_coordinator = Department.query.filter(~Department.department_code.in_(departments_with_coordinators_subquery)).all()
+    
+
+    return render_template('assigncoordinator.html', coordinators=coordinators_without_department, departments=departments_without_coordinator)
+###
 
 ##
 # Admin excel file upload for database
