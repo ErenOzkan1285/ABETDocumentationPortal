@@ -127,6 +127,7 @@ def coordinator_panel():
         print(current_user.department_code)
         return render_template('coordinator.html', instructors=instructors, courses=available_courses, unassigned_course_instances=unassigned_course_instances)
 
+
 ###
 @app.route('/assigncoordinator', methods=['GET', 'POST'])
 @login_required
@@ -136,33 +137,52 @@ def assigncoordinator():
     
     # Post request
     if request.method == 'POST':
-        coordinator_id = request.form['coordinator_id']
+        instructor_id = request.form['instructor_id']
         department_code = request.form['department_code']
-        coordinator = Coordinator.query.filter_by(id=coordinator_id).first()
+
+        instructor = Instructor.query.filter_by(id=instructor_id).first()
         department = Department.query.filter_by(department_code=department_code).first()
             
-        if not coordinator:
-            flash('Coordinator not found', 'error')
-            return redirect(url_for('coordinator_panel'))
+        if not instructor:
+            flash('Instructor not found', 'error')
+            return redirect(url_for('assigncoordinator'))
 
         if not department:
             flash('Department not found', 'error')
-            return redirect(url_for('coordinator_panel'))
+            return redirect(url_for('assigncoordinator'))
         
-        # Assign the coordinator to the department
-        coordinator.department_code = department_code
+        email = instructor.email
+        name = instructor.name
+        surname = instructor.surname
+        # This is not a good way to implement this // SONRA BAKCAM TEKRAR
+        hashed_password = bcrypt.generate_password_hash("1234").decode('utf-8')
+
+        db.session.delete(instructor)
         db.session.commit()
+        
+        new_coordinator = Coordinator(
+                name=name, 
+                surname=surname, 
+                email=email, 
+                password=hashed_password,
+                department_code=department_code
+            )
+        
+        # Remove the instructor from the Instructor table
+        db.session.add(new_coordinator)
+        db.session.commit()
+
         return redirect(url_for('assigncoordinator'))
     
     # GET request: fetch coordinators without a department and departments with no coordinators
-    coordinators_without_department = Coordinator.query.filter_by(department_code=None).all()
+    instructors = Instructor.query.all()
     # Subquery to find departments with coordinators
     departments_with_coordinators_subquery = db.session.query(Department.department_code).join(Coordinator).distinct()
     departments_without_coordinator = Department.query.filter(~Department.department_code.in_(departments_with_coordinators_subquery)).all()
     
-
-    return render_template('assigncoordinator.html', coordinators=coordinators_without_department, departments=departments_without_coordinator)
+    return render_template('assigncoordinator.html', instructors=instructors, departments=departments_without_coordinator)
 ###
+
 
 ##
 # Admin excel file upload for database
