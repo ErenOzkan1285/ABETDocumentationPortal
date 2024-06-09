@@ -6,15 +6,21 @@
     <!-- Coordinator assignment form -->
     <form method="post" action="/assigncoordinator">
         <div class="form-group">
-        <label for="coordinator_id">Coordinator:</label>
-            <select id="coordinator_id" name="coordinator_id" required>
-                {% for coordinator in coordinators %}
-                    <option value="{{ coordinator.id }}">{{ coordinator.name }} {{ coordinator.surname }}</option>
+        <label for="instructor_id">Instructors:</label>
+            {% if not instructors %}
+                <span>No instructor available</span>
+            {% endif %}
+            <select id="instructor_id" name="instructor_id" required>
+                {% for instructor in instructors %}
+                    <option value="{{ instructor.id }}">{{ instructor.name }} {{ instructor.surname }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="form-group">
             <label for="department_code">Department:</label>
+                {% if not departments %}
+                        <span>No department available</span>
+                {% endif %}
             <select id="department_code" name="department_code" required>
                 {% for department in departments %}
                     <option value="{{ department.department_code }}">{{ department.department_code }}</option>
